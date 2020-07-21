@@ -4,6 +4,11 @@
 #define NAME_LENGTH 25
 #define BOOK_LENGTH 15
 
+//==============================================
+#define DEBUG 1
+#define debug_print(fmt, ...) do{if(DEBUG) fprintf(stderr, "%s:%d:%s():" fmt, __FILE__, __LINE__, __func__, __VA_ARGS__);} while(0)
+//==============================================
+
 struct book{
     char surname[NAME_LENGTH];
     char name[NAME_LENGTH];
@@ -17,6 +22,7 @@ int main()
     int choice, n, I=0, life_cycle=1;
     char find[NAME_LENGTH];
 
+
     printf("\tNote book\n");
 
     while(life_cycle)
@@ -25,6 +31,8 @@ int main()
         scanf("%d", &choice);
         printf("\n");
 
+        debug_print(" choice > 5\n", choice);
+        
         switch(choice)
         {
             case 1: 
