@@ -4,7 +4,7 @@
 #include <stdlib.h>
 
 int main(){
-    int fd, ret, i=0;
+    int fd, ret;
     char value;
 
     if ((fd = open("text.txt", O_RDONLY))== -1){
