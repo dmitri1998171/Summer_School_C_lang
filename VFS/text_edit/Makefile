@@ -2,7 +2,7 @@ BIN := main
 SOURCES := main.c
 CC := gcc
 CFLAGS := 
-LDFLAGS := lncurses
+LDFLAGS := lpanel -lncurses
 all:
 	clear && $(CC) $(SOURCES) -o $(BIN) $(CFLAGS) -$(LDFLAGS)
 
