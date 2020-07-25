@@ -7,32 +7,18 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-int row=0;
-int col=0;
+#define MAX_NAME_LEN 44
+
+int row=0, col=0;
 int I=0, line=0;
+int fd, win_w, win_h;
+int newwin_x, newwin_y, newwin_w = MAX_NAME_LEN, newwin_h = 1;
 char c;
 
-void sig_winch(int signo)
-{
+void sig_winch(int signo){
     struct winsize size;
     ioctl(fileno(stdout), TIOCGWINSZ, (char *) &size);
     resizeterm(size.ws_row, size.ws_col);
-}
-
-void read_text(int fd){
-    int length = lseek(fd, 0, SEEK_END);
-    lseek (fd, 0, SEEK_SET);
-
-    // for(int i=0; i<length; i++){
-        while(true){
-        if(read(fd, &c, 1) == 1) {
-            addch(c);
-            if(c == '\n') line++;
-        }
-        else break;
-        I++;
-        // refresh();
-    }
 }
 
 // void write_func(){
@@ -45,14 +31,57 @@ void read_text(int fd){
 //     }
 // }
 
-void write_func(int **fd){
-    for(int i=0; i<I; i++){
-        write(**fd, &c, 1);
+void read_text(int fd){
+    while(true){
+        if(read(fd, &c, 1) == 1){
+            addch(c);
+            if(c == '\n') line++;
+        }
+        else break;
+        I++;
     }
 }
 
-void keyboard(int *fd)
+void open_func(){
+    WINDOW * wnd;
+    char filename[MAX_NAME_LEN+1];
+    
+    newwin_y = (win_h/2)-(newwin_h/2);
+    newwin_x = (win_w/2)-(newwin_w/2);
+
+    start_color();
+    refresh();
+    echo();
+    init_pair(1, COLOR_YELLOW, COLOR_BLUE);     
+    wnd = newwin(newwin_h, newwin_w, newwin_y, newwin_x);
+    wbkgd(wnd, COLOR_PAIR(1));      
+    wattron(wnd, A_BOLD);
+    wprintw(wnd, "Filename: ");
+    wgetnstr(wnd, filename, MAX_NAME_LEN);
+    filename[MAX_NAME_LEN] = 0;
+    wrefresh(wnd);
+    delwin(wnd);
+    refresh();
+    
+    if((fd = open(filename, O_RDWR))== -1){
+        endwin(); 
+        perror("open error"); 
+        exit(1);
+        }
+
+    /* Читаем файл */
+    read_text(fd);
+}
+
+void write_func(){
+    for(int i=0; i<I; i++){
+        write(fd, &c, 1);
+    }
+}
+
+void keyboard()
 {
+    noecho();                       // отключает автоматическое отображение при вводе
     int c = getch();
     switch(c){
         case KEY_LEFT: if (col > 0) col--; break;
@@ -60,9 +89,10 @@ void keyboard(int *fd)
         case KEY_UP: if (row > 0) row--; break;
         case KEY_DOWN: row++; break;
 
-        case KEY_F(1): write_func(&fd); break;
+        case KEY_F(1): open_func(); break;
+        case KEY_F(2): write_func(); break;
         case 27:        // ESCAPE
-            close(*fd);
+            close(fd);
             endwin();
             exit(0);
 
@@ -75,27 +105,21 @@ void keyboard(int *fd)
 }
 
 int main(int argc, char *argv[]){
-    int fd;
-    char str;
-
     initscr();
     signal(SIGWINCH, sig_winch);
-    // cbreak ();
+    // cbreak();
     // nonl ();
     // idlok (stdscr, TRUE);
-    noecho ();
-    keypad (stdscr, TRUE);
+    keypad(stdscr, TRUE);           // вкл. поддержку функциональных клавиш
     
-    if ((fd = open(argv[1], O_RDONLY))== -1){
-        perror("open failed!"); exit(1);}
-
-    /* Читаем файл */
-    read_text(fd);
-    move(0,5);
+    win_w = getmaxx(stdscr);        // ширина экрана
+    win_h = getmaxy(stdscr);        // высота 
+    
+    mvprintw(19, 3, "F1 - Open  F2 - Save  ESC - exit; w=%d h=%d", win_w, win_h);
 
     while(true){
-        move(row, col);
-        refresh();
+        move(row, col);             // Перемещение курсора
+        refresh();                  // Обновить
         keyboard(&fd);
     }
 
@@ -104,3 +128,12 @@ int main(int argc, char *argv[]){
 
     return 0;
 }
+
+/*
+    TODO
+
+1. Запись в файл
+\/ 2. панель с кнопками
+3. удалить окно открытия файла
+
+*/
