@@ -9,6 +9,7 @@
 
 #define MAX_NAME_LEN 44
 
+WINDOW * btmwnd;
 int row=0, col=0;
 int I=0, line=0;
 int fd, win_w, win_h;
@@ -28,7 +29,6 @@ int len(int lineno){
     return linelen + 1;
 }
 
-
 void read_func(){
     char c;
     while(1){
@@ -42,11 +42,17 @@ void read_func(){
 }
 
 void write_func(){
-    int i=0, j=0, n;
+    int length;
     char c;
-            c = mvinch(i, j);
+
+    for(int i=0; i<LINES-1; i++){
+        length = len(i);
+        for(int j=0; j<length; j++){
+            c = mvinch(i, j) & A_CHARTEXT;
             write(fd, &c, 1);
-            j++;
+        }
+        write(fd, "\n", 1);
+    }
 }
 
 void open_func(int flag){
@@ -64,6 +70,17 @@ void open_func(int flag){
     close(fd);
 }
 
+void bottom_menu_func(){
+    start_color();
+    refresh();
+    echo();
+    init_pair(1, COLOR_WHITE, COLOR_BLACK);
+    btmwnd = newwin(1, win_w, win_h-2, 0);
+    wbkgd(btmwnd, COLOR_PAIR(1));
+    wprintw(btmwnd, "   F1 - Open  F2 - Save  ESC - exit\t");
+    wrefresh(btmwnd);
+}
+
 void open_Button(){
     WINDOW * wnd;
     
@@ -73,9 +90,9 @@ void open_Button(){
     start_color();
     refresh();
     echo();
-    init_pair(1, COLOR_YELLOW, COLOR_BLUE);     
+    init_pair(2, COLOR_YELLOW, COLOR_BLUE);     
     wnd = newwin(newwin_h, newwin_w, newwin_y, newwin_x);
-    wbkgd(wnd, COLOR_PAIR(1));      
+    wbkgd(wnd, COLOR_PAIR(2));      
     wattron(wnd, A_BOLD);
     wprintw(wnd, "Filename: ");
     wgetnstr(wnd, filename, MAX_NAME_LEN);
@@ -83,11 +100,9 @@ void open_Button(){
     wrefresh(wnd);
     delwin(wnd);
     clear();            // Полная очистка экрана
-    refresh();
     
+    bottom_menu_func();
     open_func(O_RDONLY);
-
-    mvprintw(win_h-2, 3, "F1 - Open  F2 - Save  ESC - exit", win_w, win_h);
 }
 
 void keyboard(){
@@ -101,9 +116,9 @@ void keyboard(){
 
         case KEY_F(1): open_Button(); break;
         case KEY_F(2): open_func(O_WRONLY); break;
-        case KEY_BACKSPACE: delch(); move(row, --col); refresh(); break;
         case 27:        // ESCAPE
             close(fd);
+            delwin(btmwnd);
             endwin();
             exit(0);
         
@@ -123,14 +138,15 @@ int main(int argc, char *argv[]){
     win_w = getmaxx(stdscr);        // ширина экрана
     win_h = getmaxy(stdscr);        // высота 
     
-    mvprintw(win_h-2, 3, "F1 - Open  F2 - Save  ESC - exit", win_w, win_h);
-
+    bottom_menu_func();             // отрисовка кнопок F1, F2, ESC
+    
     while(1){
         move(row, col);             // Перемещение курсора
         refresh();                  // Обновить
         keyboard();
     }
 
+    delwin(btmwnd);
     endwin();
     return 0;
 }
@@ -138,7 +154,7 @@ int main(int argc, char *argv[]){
 /*
     TODO
 
-1. Запись в файл
+\/ 1. Запись в файл
 \/ 2. панель с кнопками
 \/ 3. удалить окно открытия файла
 
