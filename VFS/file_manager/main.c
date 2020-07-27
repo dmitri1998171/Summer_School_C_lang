@@ -1,6 +1,8 @@
 #include <menu.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <dirent.h>
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
@@ -9,14 +11,14 @@ char *choices[] = {
                         "Choice 2",
                         "Choice 3",
                         "Choice 4",
-                        "Choice 1",
-                        "Choice 2",
-                        "Choice 3",
-                        "Choice 4",
-                        "Choice 1",
-                        "Choice 2",
-                        "Choice 3",
-                        "Choice 4",
+                        "Choice 5",
+                        "Choice 6",
+                        "Choice 7",
+                        "Choice 8",
+                        "Choice 9",
+                        "Choice 10",
+                        "Choice 11",
+                        "Choice 12",
                         "Exit",
                         (char *)NULL,
                   };
@@ -24,13 +26,29 @@ void print_in_middle(WINDOW *win, int starty, int startx, int width, char *strin
 
 int main()
 {	
+    struct dirent **namelist;
+    int n;
     ITEM **my_items;
 	int c;				
 	MENU *my_menu;
         WINDOW *win_left;
         WINDOW *win_right;
         int n_choices, i;
-	
+
+//======== получем список файлов в директории =============
+
+    n = scandir(".", &namelist, NULL, alphasort);
+    if (n < 0) perror("scandir");
+    
+    for(int i=0; i<n; i++){         // вывод в консоль
+        printf("%s\n", namelist[i]->d_name);
+        free(namelist[i]);
+    }
+    free(namelist);
+
+//=========================================================
+
+
 	/* Initialize curses */
 	initscr();
 	start_color();
@@ -58,7 +76,7 @@ int main()
 	/* Set main window and sub window */
         set_menu_win(my_menu, win_left);
         set_menu_sub(my_menu, derwin(win_left, 6, 38, 3, 1));
-
+        set_menu_format(my_menu, 5, 1);
         // set_menu_win(my_menu, win_right);
         // set_menu_sub(my_menu, derwin(win_right, 6, 38, 3, 1));
 
@@ -78,13 +96,14 @@ int main()
     mvwaddch(win_right, 2, (COLS/2)-1, ACS_RTEE);
 	mvwhline(win_right, 2, 1, ACS_HLINE, (COLS/2)-2);
 	mvwaddch(win_right, 2, 0, ACS_LTEE);
-	mvprintw(LINES - 1, 1, "Tab - switch panel  F1 - exit");
-	refresh();
     
 	/* Post the menu */
 	post_menu(my_menu);
 	wrefresh(win_left);
     wrefresh(win_right);
+
+	mvprintw(LINES - 1, 1, "Tab - switch panel  pageUp - scroll up  pageDown - scroll down  F1 - exit");
+	refresh();
 
 	while((c = wgetch(win_left)) != KEY_F(1))
 	{       switch(c)
