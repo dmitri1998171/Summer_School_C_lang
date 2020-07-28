@@ -4,52 +4,39 @@
 #include <sys/types.h>
 #include <dirent.h>
 
-#define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
+char *choices[];
 
-char *choices[] = {
-                        "Choice 1",
-                        "Choice 2",
-                        "Choice 3",
-                        "Choice 4",
-                        "Choice 5",
-                        "Choice 6",
-                        "Choice 7",
-                        "Choice 8",
-                        "Choice 9",
-                        "Choice 10",
-                        "Choice 11",
-                        "Choice 12",
-                        "Exit",
-                        (char *)NULL,
-                  };
 void print_in_middle(WINDOW *win, int starty, int startx, int width, char *string, chtype color);
 
 int main()
 {	
     struct dirent **namelist;
-    int n;
+    int n, c, n_choices;
     ITEM **my_items;
-	int c;				
 	MENU *my_menu;
-        WINDOW *win_left;
-        WINDOW *win_right;
-        int n_choices, i;
+    WINDOW *win_left;
+    WINDOW *win_right;
 
 //======== получем список файлов в директории =============
 
     n = scandir(".", &namelist, NULL, alphasort);
     if (n < 0) perror("scandir");
     
-    for(int i=0; i<n; i++){         // вывод в консоль
-        printf("%s\n", namelist[i]->d_name);
+    for(int i=0; i<n; i++){    // заполняем массив для меню
+        choices[i] = namelist[i]->d_name;
         free(namelist[i]);
     }
     free(namelist);
 
 //=========================================================
+	
+    /* Создаем эл-ты */
+    n_choices = sizeof(&choices);
+    my_items = (ITEM **)calloc(n_choices, sizeof(ITEM *));
+    for(int i = 0; i < n_choices; ++i){
+        my_items[i] = new_item(choices[i], 0);
+    }
 
-
-	/* Initialize curses */
 	initscr();
 	start_color();
     cbreak();
@@ -57,21 +44,15 @@ int main()
 	keypad(stdscr, TRUE);
 	init_pair(1, COLOR_RED, COLOR_BLACK);
 
-	/* Create items */
-        n_choices = ARRAY_SIZE(choices);
-        my_items = (ITEM **)calloc(n_choices, sizeof(ITEM *));
-        for(i = 0; i < n_choices; ++i)
-                my_items[i] = new_item(choices[i], choices[i]);
 
-	/* Crate menu */
+	/* создаем меню */
 	my_menu = new_menu((ITEM **)my_items);
 
-	/* Create the windows to be associated with the menu */
-        win_left = newwin(LINES-1, COLS/2, 0, 0);
-        keypad(win_left, TRUE);
-     
-        win_right = newwin(LINES-1, COLS/2, 0, COLS/2);
-        keypad(win_right, TRUE);
+    win_left = newwin(LINES-1, COLS/2, 0, 0);
+    keypad(win_left, TRUE);
+    
+    win_right = newwin(LINES-1, COLS/2, 0, COLS/2);
+    keypad(win_right, TRUE);
 
 	/* Set main window and sub window */
         set_menu_win(my_menu, win_left);
@@ -80,10 +61,9 @@ int main()
         // set_menu_win(my_menu, win_right);
         // set_menu_sub(my_menu, derwin(win_right, 6, 38, 3, 1));
 
-	/* Set menu mark to the string " * " */
-        set_menu_mark(my_menu, " * ");
+    set_menu_mark(my_menu, " * ");
 
-	/* Print a border around the main window and print a title */
+	/* Рисуем границы и заголовок */
 	print_in_middle(win_left, 1, 0, COLS/2, "File Manager", COLOR_PAIR(1));
     print_in_middle(win_right, 1, 0, COLS/2, "File Manager", COLOR_PAIR(1));
 
@@ -97,7 +77,7 @@ int main()
 	mvwhline(win_right, 2, 1, ACS_HLINE, (COLS/2)-2);
 	mvwaddch(win_right, 2, 0, ACS_LTEE);
     
-	/* Post the menu */
+	/* Публикуем меню */
 	post_menu(my_menu);
 	wrefresh(win_left);
     wrefresh(win_right);
@@ -123,11 +103,12 @@ int main()
                 wrefresh(win_left);
 	}	
 
-	/* Unpost and free all the memory taken up */
-        unpost_menu(my_menu);
-        free_menu(my_menu);
-        for(i = 0; i < n_choices; ++i)
-                free_item(my_items[i]);
+	/* Удаляем меню и освождаем память */
+    unpost_menu(my_menu);
+    free_menu(my_menu);
+    for(int i = 0; i < n_choices; ++i){
+            free_item(my_items[i]);
+    }
 	endwin();
 }
 
