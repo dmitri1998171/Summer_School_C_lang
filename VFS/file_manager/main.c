@@ -4,8 +4,8 @@
 #include <sys/types.h>
 #include <dirent.h>
 
-char *choices[];
-char *dir_arr[];
+char *choices[];        // список всех файлов в директории
+char *dir_arr[];        // список папок в директории
 char *dir_path;
 int arr_size;
 WINDOW *win_left;
@@ -21,8 +21,9 @@ void resize_array(char *arr[], char *new_arr[]){
 }
 
 int main(){	
-    char *path=".";
-    int size;
+    char *path_left="/";
+    char *path_right="/";
+    int size_left, size_right, dir_size=0;
     int c, n_choices, cycle = 1, win_tab = 0;;
     struct dirent **namelist;
     ITEM **my_items_left;
@@ -35,41 +36,49 @@ int main(){
     // strcat(path, "home/dmitry");
     // resize_array(path, path);
 
-    size = scandir(path, &namelist, NULL, alphasort);
-    if (size < 0) perror("scandir");
+    size_left = scandir(path_left, &namelist, NULL, alphasort);
+    if (size_left < 0) perror("scandir left");
 
-    // arr_size = size;
+    size_right = scandir(path_right, &namelist, NULL, alphasort);
+    if (size_right < 0) perror("scandir right");
+
+    // arr_size_left = size_left;
     // dir_path = path;
 
-    printf("\nsize: %d\n\n", size);
-    printf("all\tfolder\n");
-    printf("------------------------------\n");
 
-    int j=0;
-    for(int i=0; i<size; i++){    // заполняем массив для меню
+    for(int i=0; i<size_left; i++){    // заполняем массив для меню
         choices[i] = namelist[i]->d_name;
         
         if(namelist[i]->d_type == DT_DIR){
-            dir_arr[i] = namelist[i]->d_name;
+            dir_arr[dir_size] = namelist[i]->d_name;
+            dir_size++;
         }
         
-        printf("%s\t\t\t%s\n", choices[i], dir_arr[i]);
+        printf("%s\n", choices[i]);
         free(namelist[i]);
     }
     free(namelist);
 
+    // printf("------------------------------\n");
+
+    // for(int i=0; i<dir_size; i++){
+    //     printf("%s\n", dir_arr[i]);
+    // }
+    printf("\nsize_left: %d\n", size_left);
+    printf("dir_size: %d\n", dir_size);
+
 //======== Создаем эл-ты ==================================
 	
-    my_items_right = (ITEM **)calloc(size+1, sizeof(ITEM *));
-    for(int i = 0; i < size; ++i){
-        my_items_right[i] = new_item(choices[i], 0);
-        set_item_userptr(my_items_right[i], func);
-    }
-
-    my_items_left = (ITEM **)calloc(size+1, sizeof(ITEM *));
-    for(int i = 0; i < size; ++i){
+    my_items_left = (ITEM **)calloc(size_left+1, sizeof(ITEM *));
+    for(int i = 0; i < size_left; ++i){
         my_items_left[i] = new_item(choices[i], 0);
         set_item_userptr(my_items_left[i], func);
+    }
+
+    my_items_right = (ITEM **)calloc(size_left+1, sizeof(ITEM *));
+    for(int i = 0; i < size_left; ++i){
+        my_items_right[i] = new_item(choices[i], 0);
+        set_item_userptr(my_items_right[i], func);
     }
     
 //=========================================================
@@ -87,27 +96,29 @@ int main(){
 	my_menu_left = new_menu((ITEM **)my_items_left);
     my_menu_right = new_menu((ITEM **)my_items_right);
 
-    win_left = newwin(LINES-1, COLS/2, 0, 0);
+    win_left = newwin(LINES-4, COLS/2, 3, 0);
     keypad(win_left, TRUE);
     
-    win_right = newwin(LINES-1, COLS/2, 0, COLS/2);
+    win_right = newwin(LINES-4, COLS/2, 3, COLS/2);
     keypad(win_right, TRUE);
 
 	/* Задаем окно */
-    set_menu_win(my_menu_left, win_left);
-    set_menu_sub(my_menu_left, derwin(win_left, 6, (COLS/2)-2, 3, 1));
-    set_menu_format(my_menu_left, 5, 1);
+    set_menu_win(my_menu_left, win_left);           // соотнош. меню к окну
+    set_menu_sub(my_menu_left, derwin(win_left, LINES-4, (COLS/2)-2, 3, 1)); // создание подокна
+    set_menu_format(my_menu_left, LINES-4, 1);      // кол-во выводимых строк, столбцов за раз
 
     set_menu_win(my_menu_right, win_right);
-    set_menu_sub(my_menu_right, derwin(win_right, 6, (COLS/2)-2, 3, 1));
-    set_menu_format(my_menu_right, 5, 1);
+    set_menu_sub(my_menu_right, derwin(win_right, LINES-4, (COLS/2)-2, 3, 1));
+    set_menu_format(my_menu_right, LINES-4, 1);
 
-    set_menu_mark(my_menu_left, " * ");
+    set_menu_mark(my_menu_left, " * ");             // указатель текущ. эл-та
     set_menu_mark(my_menu_right, " * ");
 
 	/* Рисуем границы и заголовок */
-	print_title(win_left, 1, 0, COLS/2, "File Manager", COLOR_PAIR(1));
-    print_title(win_right, 1, 0, COLS/2, "File Manager", COLOR_PAIR(1));
+    char *title="---------- File Manager ----------";
+    print_title(stdscr, 1, 0, COLS, title, COLOR_PAIR(1));
+	print_title(win_left, 1, 0, COLS/2, path_left, COLOR_PAIR(1));
+    print_title(win_right, 1, 0, COLS/2, path_right, COLOR_PAIR(1));
 
     box_title(win_left, 0, 0, 2, 1, (COLS/2)-2, 0, (COLS/2)-1);
     box_title(win_right, 0, 0, 2, 1, (COLS/2)-2, 0, (COLS/2)-1);
@@ -121,8 +132,8 @@ int main(){
 	mvprintw(LINES - 1, 1, "Tab - switch panel  pageUp - scroll up  pageDown - scroll down  F1 - exit");
 	refresh();
 
-	while(cycle)
-	{      
+	while(cycle){      
+        /* переключение между окнами */
         if(win_tab == 0) {c = wgetch(win_left); switchFunc(&c, my_menu_left);}
         if(win_tab == 1) {c = wgetch(win_right); switchFunc(&c, my_menu_right);}        
 
@@ -133,19 +144,6 @@ int main(){
             if(win_tab > 1) win_tab = 0;
         }
 
-            // case 10:        // Enter 
-			// {	
-            //     ITEM *cur;
-			// 	void (*p)(char *);
-
-			// 	cur = current_item(my_menu_left);
-			// 	p = item_userptr(cur);
-			// 	p((char *)item_name(cur));
-			// 	pos_menu_cursor(my_menu_left);
-			// 	break;
-			// }
-            //     break;
-		
         wrefresh(win_left);
         wrefresh(win_right);
 	}	
@@ -155,6 +153,7 @@ int main(){
     unpost_menu(my_menu_right);
     free_menu(my_menu_left);
     free_menu(my_menu_right);
+
     for(int i = 0; i < n_choices; ++i){
         free_item(my_items_right[i]);
         free_item(my_items_left[i]);
@@ -176,6 +175,19 @@ void switchFunc(int *c, MENU *menu){
         case KEY_PPAGE:
             menu_driver(menu, REQ_SCR_UPAGE);
             break;
+        
+        // case 10:        // Enter 
+        // {	
+        //     ITEM *cur;
+        //     void (*p)(char *);
+
+        //     cur = current_item(menu);
+        //     p = item_userptr(cur);
+        //     p((char *)item_name(cur));
+        //     pos_menu_cursor(menu);
+        //     break;
+        // }
+        // break;
     }
 }
 
@@ -222,7 +234,7 @@ void print_title(WINDOW *win, int starty, int startx, int width, char *string, c
 
 \/ 1. Вывод во 2-ое окно
 \/ 2. переключение окон
-3. кол-во видимых эл-ов в меню 
+\/ 3. кол-во видимых эл-ов в меню 
 4. переход по папкам
 5. permission denied 
 
