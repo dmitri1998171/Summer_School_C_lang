@@ -104,12 +104,12 @@ int main(){
 
 	/* Задаем окно */
     set_menu_win(my_menu_left, win_left);           // соотнош. меню к окну
-    set_menu_sub(my_menu_left, derwin(win_left, LINES-4, (COLS/2)-2, 3, 1)); // создание подокна
-    set_menu_format(my_menu_left, LINES-4, 1);      // кол-во выводимых строк, столбцов за раз
+    set_menu_sub(my_menu_left, derwin(win_left, LINES-7, (COLS/2)-2, 3, 1)); // создание подокна
+    set_menu_format(my_menu_left, LINES-7, 1);      // кол-во выводимых строк, столбцов за раз
 
     set_menu_win(my_menu_right, win_right);
-    set_menu_sub(my_menu_right, derwin(win_right, LINES-4, (COLS/2)-2, 3, 1));
-    set_menu_format(my_menu_right, LINES-4, 1);
+    set_menu_sub(my_menu_right, derwin(win_right, LINES-7, (COLS/2)-2, 3, 1));
+    set_menu_format(my_menu_right, LINES-7, 1);
 
     set_menu_mark(my_menu_left, " * ");             // указатель текущ. эл-та
     set_menu_mark(my_menu_right, " * ");
@@ -154,10 +154,14 @@ int main(){
     free_menu(my_menu_left);
     free_menu(my_menu_right);
 
-    for(int i = 0; i < n_choices; ++i){
-        free_item(my_items_right[i]);
+    for(int i = 0; i < size_left; ++i){
         free_item(my_items_left[i]);
     }
+
+    for(int i = 0; i < size_right; ++i){
+        free_item(my_items_right[i]);
+    }
+
 	endwin();
 }
 
@@ -176,7 +180,7 @@ void switchFunc(int *c, MENU *menu){
             menu_driver(menu, REQ_SCR_UPAGE);
             break;
         
-        // case 10:        // Enter 
+        // case '\n':        // Enter 
         // {	
         //     ITEM *cur;
         //     void (*p)(char *);
