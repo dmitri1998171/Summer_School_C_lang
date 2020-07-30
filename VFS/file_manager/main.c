@@ -29,53 +29,35 @@ void box_title(WINDOW* , int, int, int ,int, int, int, int);
 void func(char *name);
 void switchFunc(int*, MENU*);
 
-void resize_array(char *arr[], char *new_arr[]){
-    new_arr = calloc(sizeof(&arr), 1);
-}
-
 void dirScan(char *path, struct dirent **namelist, 
-            char *choices[], int *size, ITEM **my_items){
+            char *choices[], int *size){
 
     *size = scandir(path, &namelist, NULL, alphasort);
     if (*size < 0) perror("scandir");
 
-    for(int i=0; i<*size; i++){    // заполняем массив для меню
+    for(int i=0; i < *size; i++){    // заполняем массив для меню
         choices[i] = namelist[i]->d_name;
         
         if(namelist[i]->d_type == DT_DIR){
             dir_arr[dir_size] = namelist[i]->d_name;
             dir_size++;
         }
-        
-        // printf("%s\n", choices[i]);
         free(namelist[i]);
     }
     free(namelist);   
 }
 
-void menu_mem(){
-    // Создаем эл-ты меню в массиве
-    my_items_left = (ITEM **)calloc(size_left+1, sizeof(ITEM *));
-    for(int i = 0; i < size_left; ++i){
-        my_items_left[i] = new_item(choices_left[i], 0);
-        set_item_userptr(my_items_left[i], func);
-    } 
-}
-
 int main(){	
     
     // получем список файлов в директории 
-    dirScan(path_left, namelist_left, choices_left, &size_left, my_items_left); 
-    dirScan(path_right, namelist_right, choices_right, &size_right, my_items_right); 
-    
-    menu_mem();
+    dirScan(path_left, namelist_left, choices_left, &size_left); 
+    dirScan(path_right, namelist_right, choices_right, &size_right); 
 
-    // strcat(path, "home/dmitry");
-    // resize_array(path, path);
-
-//=========================================================
-
-
+    my_items_left = (ITEM **)calloc(size_left, sizeof(ITEM *));
+    for(int i = 0; i < size_left; ++i){
+        my_items_left[i] = new_item(choices_left[i], 0);
+        set_item_userptr(my_items_left[i], func);
+    }
 
     my_items_right = (ITEM **)calloc(size_right+1, sizeof(ITEM *));
     for(int i = 0; i < size_right; ++i){
@@ -83,6 +65,8 @@ int main(){
         set_item_userptr(my_items_right[i], func);
     }
     
+// =========================================================
+
     // exit(0);
 
 	initscr();
@@ -205,7 +189,13 @@ void func(char *name){
                 break;
             }
         }
-        dirScan(path_left, namelist_left, choices_left, &size_left, my_items_left); 
+        dirScan(path_left, namelist_left, choices_left, &size_left); 
+
+        my_items_left = (ITEM **)calloc(size_left, sizeof(ITEM *));
+        for(int i = 0; i < size_left; ++i){
+            my_items_left[i] = new_item(choices_left[i], 0);
+            set_item_userptr(my_items_left[i], func);
+    }
     }
     if(win_tab == 1)
     {
@@ -215,7 +205,13 @@ void func(char *name){
                 break;
             }
         }
-        dirScan(path_right, namelist_right, choices_right, &size_right, my_items_right); 
+        dirScan(path_right, namelist_right, choices_right, &size_right); 
+
+        my_items_right = (ITEM **)calloc(size_right+1, sizeof(ITEM *));
+        for(int i = 0; i < size_right; ++i){
+            my_items_right[i] = new_item(choices_right[i], 0);
+            set_item_userptr(my_items_right[i], func);
+    }
     }
 }	
 
