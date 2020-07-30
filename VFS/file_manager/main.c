@@ -4,12 +4,23 @@
 #include <sys/types.h>
 #include <dirent.h>
 
-char *choices[];        // список всех файлов в директории
-char *dir_arr[];        // список папок в директории
+char *choices[255];        // список всех файлов в директории
+char *dir_arr[255];     // список папок в директории
 char *dir_path;
+int dir_size=0;
 int arr_size;
 WINDOW *win_left;
 WINDOW *win_right;
+
+char *path_left="/";
+char *path_right="/";
+int size_left, size_right; 
+int c, n_choices, cycle = 1, win_tab = 0;;
+struct dirent **namelist;
+ITEM **my_items_left;
+ITEM **my_items_right;
+MENU *my_menu_left;
+MENU *my_menu_right;
 
 void print_title(WINDOW *win, int starty, int startx, int width, char *string, chtype color);
 void box_title(WINDOW* , int, int, int ,int, int, int, int);
@@ -20,21 +31,7 @@ void resize_array(char *arr[], char *new_arr[]){
     new_arr = calloc(sizeof(&arr), 1);
 }
 
-int main(){	
-    char *path_left="/";
-    char *path_right="/";
-    int size_left, size_right, dir_size=0;
-    int c, n_choices, cycle = 1, win_tab = 0;;
-    struct dirent **namelist;
-    ITEM **my_items_left;
-    ITEM **my_items_right;
-	MENU *my_menu_left;
-    MENU *my_menu_right;
-
-//======== получем список файлов в директории =============
-
-    // strcat(path, "home/dmitry");
-    // resize_array(path, path);
+void dirScan(){
 
     size_left = scandir(path_left, &namelist, NULL, alphasort);
     if (size_left < 0) perror("scandir left");
@@ -42,8 +39,8 @@ int main(){
     size_right = scandir(path_right, &namelist, NULL, alphasort);
     if (size_right < 0) perror("scandir right");
 
-    // arr_size_left = size_left;
-    // dir_path = path;
+    arr_size = size_left;
+    dir_path = path_left;
 
 
     for(int i=0; i<size_left; i++){    // заполняем массив для меню
@@ -54,26 +51,35 @@ int main(){
             dir_size++;
         }
         
-        printf("%s\n", choices[i]);
+        // printf("%s\n", choices[i]);
         free(namelist[i]);
     }
     free(namelist);
+
+    // Создаем эл-ты меню в массиве
+    my_items_left = (ITEM **)calloc(size_left+1, sizeof(ITEM *));
+    for(int i = 0; i < size_left; ++i){
+        my_items_left[i] = new_item(choices[i], 0);
+        set_item_userptr(my_items_left[i], func);
+    }
+}
+
+int main(){	
+    
+    dirScan(); // получем список файлов в директории 
+
+    // strcat(path, "home/dmitry");
+    // resize_array(path, path);
+
 
     // printf("------------------------------\n");
 
     // for(int i=0; i<dir_size; i++){
     //     printf("%s\n", dir_arr[i]);
     // }
-    printf("\nsize_left: %d\n", size_left);
-    printf("dir_size: %d\n", dir_size);
+    // printf("\nsize_left: %d\n", size_left);
+    // printf("dir_size: %d\n", dir_size);
 
-//======== Создаем эл-ты ==================================
-	
-    my_items_left = (ITEM **)calloc(size_left+1, sizeof(ITEM *));
-    for(int i = 0; i < size_left; ++i){
-        my_items_left[i] = new_item(choices[i], 0);
-        set_item_userptr(my_items_left[i], func);
-    }
 
     my_items_right = (ITEM **)calloc(size_left+1, sizeof(ITEM *));
     for(int i = 0; i < size_left; ++i){
@@ -180,29 +186,30 @@ void switchFunc(int *c, MENU *menu){
             menu_driver(menu, REQ_SCR_UPAGE);
             break;
         
-        // case '\n':        // Enter 
-        // {	
-        //     ITEM *cur;
-        //     void (*p)(char *);
+        case '\n':        // Enter 
+        {	
+            ITEM *cur;
+            void (*p)(char *);
 
-        //     cur = current_item(menu);
-        //     p = item_userptr(cur);
-        //     p((char *)item_name(cur));
-        //     pos_menu_cursor(menu);
-        //     break;
-        // }
-        // break;
+            cur = current_item(menu);
+            p = item_userptr(cur);
+            p((char *)item_name(cur));
+            pos_menu_cursor(menu);
+            break;
+        }
+        break;
     }
 }
 
-void func(char *name){	
-    int check = 0;
-
-    for(int i=0; i<arr_size; i++){
-        if(strcmp(dir_arr[i], name) == 0){strcat(dir_path, name); break;}
+void func(char *name){
+    for(int i=0; i<dir_size; i++){
+        if(strcmp(dir_arr[i], name) == 0){
+            strcat(path_left, name); 
+            break;
+        }
     }
 
-    mvwprintw(win_left, 7,3, dir_path);
+    dirScan();
 }	
 
 void box_title(WINDOW *wnd, int box_x, int box_y, int line_y, int line_x, int line_w, int lt_x, int rt_x){
