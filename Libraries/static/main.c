@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "my_lib.h"
 
 float a, b;
 
@@ -8,11 +9,6 @@ void get_ab(){
     printf("b: ");
     scanf("%f", &b);
 }
-
-float sum(float a, float b){ return a + b; }
-float min(float a, float b){ return a - b; }
-float mul(float a, float b){ return a * b; }
-float div(float a, float b){ return a / b; }
 
 int main(){
     
@@ -41,7 +37,7 @@ int main(){
                 break;
             case 4:  
                 get_ab();
-                if(b == 0) printf("\nDivision by zero!\n"); break;
+                if(b == 0){ printf("\nDivision by zero!\n"); break; }
                 printf("result: %f\n", div(a, b));
                 break;
             case 0: cycle = 0; break;
