@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <dirent.h>
+#include <direct.h>
 
 char *choices_left[];   // список всех файлов в директории
 char *choices_right[];
@@ -15,6 +16,7 @@ WINDOW *win_right;
 
 char *path_left="/";
 char *path_right="/";
+char new_path[512];
 int size_left, size_right; 
 int c, n_choices, cycle = 1, win_tab = 0;;
 struct dirent **namelist_left;
@@ -48,8 +50,9 @@ void dirScan(char *path, struct dirent **namelist,
 }
 
 int main(){	
-    
     // получем список файлов в директории 
+    // strcpy(new_path, path_left);
+
     dirScan(path_left, namelist_left, choices_left, &size_left); 
     dirScan(path_right, namelist_right, choices_right, &size_right); 
 
@@ -87,7 +90,7 @@ int main(){
     keypad(win_right, TRUE);
 
 	/* Задаем окно */
-    set_menu_win(my_menu_left, win_left);           // соотнош. меню к окну
+    set_menu_win(my_menu_left, win_left);           // отнош. меню к окну
     set_menu_sub(my_menu_left, derwin(win_left, LINES-7, (COLS/2)-2, 3, 1)); // создание подокна
     set_menu_format(my_menu_left, LINES-7, 1);      // кол-во выводимых строк, столбцов за раз
 
@@ -180,34 +183,38 @@ void switchFunc(int *c, MENU *menu){
 }
 
 void func(char *name){
-    printf("win_tab: %d\n", win_tab);
     if(win_tab == 0)
     {
         for(int i=0; i<dir_size; i++){
-            if(strcmp(dir_arr[i], name) == 0){
-                strcat(path_left, name); 
+            if(strcmp(dir_arr[i], name) == 0){                
+                snprintf(new_path, sizeof new_path, "%s%s", path_left, name);
+                chdir(new_path);
+                print_title(win_left, 1, 0, COLS/2, new_path, COLOR_PAIR(1));
                 break;
             }
         }
-        dirScan(path_left, namelist_left, choices_left, &size_left); 
+        dirScan(new_path, namelist_left, choices_left, &size_left); 
 
         my_items_left = (ITEM **)calloc(size_left, sizeof(ITEM *));
         for(int i = 0; i < size_left; ++i){
             my_items_left[i] = new_item(choices_left[i], 0);
-            set_item_userptr(my_items_left[i], func);
+            // set_item_userptr(my_items_left[i], func);
+        
+        wrefresh(win_left);
     }
     }
     if(win_tab == 1)
     {
         for(int i=0; i<dir_size; i++){
             if(strcmp(dir_arr[i], name) == 0){
-                strcat(path_right, name); 
+                snprintf(new_path, sizeof new_path, "%s%s", path_right, name);
+                print_title(win_right, 1, 0, COLS/2, new_path, COLOR_PAIR(1));
                 break;
             }
         }
         dirScan(path_right, namelist_right, choices_right, &size_right); 
 
-        my_items_right = (ITEM **)calloc(size_right+1, sizeof(ITEM *));
+        my_items_right = (ITEM **)calloc(size_right, sizeof(ITEM *));
         for(int i = 0; i < size_right; ++i){
             my_items_right[i] = new_item(choices_right[i], 0);
             set_item_userptr(my_items_right[i], func);
@@ -252,3 +259,10 @@ void print_title(WINDOW *win, int starty, int startx, int width, char *string, c
 4. переход по папкам
 
 */
+
+/* 
+?
+1) calloc
+2) path
+
+ */
