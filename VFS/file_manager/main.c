@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <dirent.h>
-#include <direct.h>
+#include <unistd.h>
 
 char *choices_left[];   // список всех файлов в директории
 char *choices_right[];
@@ -49,6 +49,34 @@ void dirScan(char *path, struct dirent **namelist,
     free(namelist);   
 }
 
+void interfaceFunc(MENU *my_menu, WINDOW *win, ITEM **my_item, char *path, int t){
+    int x;
+
+    if(t == 0){ x = 0; }
+    if(t == 1){ x = COLS/2; }
+
+    /* Создаем окно */
+    win = newwin(LINES-4, COLS/2, 3, x);
+    keypad(win, TRUE);
+    
+    /* Создаем меню */
+    my_menu = new_menu((ITEM **)my_item);
+    keypad(win, TRUE);
+
+    /* Задаем окно */
+    set_menu_win(my_menu, win);                // отнош. меню к окну
+    set_menu_sub(my_menu, derwin(win, LINES-7, COLS/2-2, 3, 1)); // создание подокна
+    set_menu_format(my_menu, LINES-7, 1);      // кол-во выводимых строк, столбцов за раз
+    set_menu_mark(my_menu, " * ");             // указатель текущ. эл-та
+
+    print_title(win, 1, 0, COLS/2, path, COLOR_PAIR(1));
+    box_title(win, 0, 0, 2, 1, COLS/2-2, 0, COLS/2-1);
+
+    /* Публикуем меню */
+	post_menu(my_menu);
+	wrefresh(win);
+}
+
 int main(){	
     // получем список файлов в директории 
     // strcpy(new_path, path_left);
@@ -67,9 +95,8 @@ int main(){
         my_items_right[i] = new_item(choices_right[i], 0);
         set_item_userptr(my_items_right[i], func);
     }
-    
 // =========================================================
-
+    
     // exit(0);
 
 	initscr();
@@ -78,6 +105,9 @@ int main(){
     noecho();
 	keypad(stdscr, TRUE);
 	init_pair(1, COLOR_RED, COLOR_BLACK);
+
+    // interfaceFunc(my_menu_left, win_left, my_items_left, path_left, 0);
+    // interfaceFunc(my_menu_right, win_right, my_items_right, path_right, 1);
 
 	/* создаем меню */
 	my_menu_left = new_menu((ITEM **)my_items_left);
@@ -188,7 +218,7 @@ void func(char *name){
         for(int i=0; i<dir_size; i++){
             if(strcmp(dir_arr[i], name) == 0){                
                 snprintf(new_path, sizeof new_path, "%s%s", path_left, name);
-                chdir(new_path);
+                chdir(".");
                 print_title(win_left, 1, 0, COLS/2, new_path, COLOR_PAIR(1));
                 break;
             }
@@ -199,9 +229,15 @@ void func(char *name){
         for(int i = 0; i < size_left; ++i){
             my_items_left[i] = new_item(choices_left[i], 0);
             // set_item_userptr(my_items_left[i], func);
-        
+        }
+        my_menu_left = new_menu((ITEM **)my_items_left);
+
+        set_menu_win(my_menu_left, win_left);           // отнош. меню к окну
+    set_menu_sub(my_menu_left, derwin(win_left, LINES-7, (COLS/2)-2, 3, 1)); // создание подокна
+    set_menu_format(my_menu_left, LINES-7, 1);      // кол-во выводимых строк, столбцов за раз
+
+
         wrefresh(win_left);
-    }
     }
     if(win_tab == 1)
     {

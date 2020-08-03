@@ -6,42 +6,52 @@
 #include <stdio.h> 
 #include <string.h> 
 
-int walker( char *searching, char *result ) {
-  DIR           *d;
-  struct dirent *dir;
-  d = opendir( "." );
-  if( d == NULL ) {
-    return 1;
-  }
-  while( ( dir = readdir( d ) ) ) {
-    if( strcmp( dir->d_name, "." ) == 0 || 
-        strcmp( dir->d_name, ".." ) == 0 ) {
-      continue;
-    }
-    if( dir->d_type == DT_DIR ) {
-      chdir( dir->d_name );
-      walker( searching, result );
-      chdir( ".." );
-    } else {
-      if( strcmp( dir->d_name, searching ) == 0 ) {
-        int  len;
-        getcwd( result, MAXPATHLEN );
-        len = strlen( result );
-        snprintf( result + len, MAXPATHLEN - len, "/%s", dir->d_name );
-        break;
-      }
-    }
-  }
-  closedir( d );
-  return *result == 0;
+DIR *d;
+struct dirent *dir;
+char *dir_arr[255];
+char *path="/";
+char *new_path;
+char *tree_path;
+
+int scaner(){
+	int i=0, f=0;
+
+	// path = new_path;
+	// strcpy(path, new_path);
+	d = opendir(path);
+	if( d == NULL ){ return 1; }
+
+	while((dir = readdir(d))){
+		if(strcmp( dir->d_name, "." ) == 0 || 
+			strcmp( dir->d_name, ".." ) == 0){
+			continue;
+	}
+		if(dir->d_type == DT_DIR){
+			dir_arr[f] = dir->d_name;
+			printf("%s\n", dir_arr[f]);
+			f++;
+		} 
+		i++;
+	}
+	printf("\nf: %d\n", f);
+	closedir(d);
 }
 
-int main( ) {
-  char buf[MAXPATHLEN] = { 0 };
-  if( walker( "qwe.c", buf ) == 0 ) {
-    printf( "Found: %s\n", buf );
-  } else {
-    puts( "Not found" );
-  }
+int main(){
+	int c;
+	
+	// strcpy(tree_path, path);
+
+ 	scaner();
+	printf("\n");
+	scanf("%d", &c);
+	// strcpy(path, dir_arr[c-1]);
+	snprintf(new_path, sizeof new_path, "%s%s", path, dir_arr[c-1]);
+	printf("dir_arr: %s\n", new_path);
+	
+	// chdir(new_path);
+	// getcwd(path, 100);
+	// scaner();
+
   return 0;
 }
