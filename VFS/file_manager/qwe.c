@@ -5,6 +5,7 @@
 #include <unistd.h> 
 #include <stdio.h> 
 #include <string.h> 
+#include <errno.h>
 
 DIR *d;
 struct dirent *dir;
@@ -13,13 +14,11 @@ char *path="/";
 char *new_path;
 char *tree_path;
 
-int scaner(){
-	int i=0, f=0;
-
-	// path = new_path;
-	// strcpy(path, new_path);
+int scaner(char *path){
+	int f=0;
+	
 	d = opendir(path);
-	if( d == NULL ){ return 1; }
+	if( d == NULL ){ perror("opendir"); return 1; }
 
 	while((dir = readdir(d))){
 		if(strcmp( dir->d_name, "." ) == 0 || 
@@ -31,27 +30,25 @@ int scaner(){
 			printf("%s\n", dir_arr[f]);
 			f++;
 		} 
-		i++;
 	}
-	printf("\nf: %d\n", f);
 	closedir(d);
 }
 
 int main(){
 	int c;
 	
-	// strcpy(tree_path, path);
-
- 	scaner();
+	// strcpy(&new_path, &path);
+ 	scaner(path);
 	printf("\n");
 	scanf("%d", &c);
-	// strcpy(path, dir_arr[c-1]);
-	snprintf(new_path, sizeof new_path, "%s%s", path, dir_arr[c-1]);
-	printf("dir_arr: %s\n", new_path);
+	snprintf(&new_path, sizeof new_path, "%s%s\0", path, dir_arr[c-1]);
+	// strcat(path, dir_arr[c-1]);
+	// strcat();
+	printf("new_path: %s\n", &new_path);
 	
 	// chdir(new_path);
 	// getcwd(path, 100);
-	// scaner();
+	scaner(new_path);
 
   return 0;
 }
