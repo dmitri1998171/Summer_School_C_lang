@@ -5,8 +5,8 @@
 #include <dirent.h>
 #include <unistd.h>
 
-char *choices_left[];   // список всех файлов в директории
-char *choices_right[];
+char *choices_left[255];   // список всех файлов в директории
+char *choices_right[255];
 // char *dir_arr[255];     // список папок в директории
 char *dir_path;
 int dir_size=0;
@@ -32,8 +32,13 @@ char *dir_arr[255];
 char new_path[255];
 char path_left[255]={"/"};
 
-int scaner(char *path){
-	int f=0;
+void print_title(WINDOW *win, int starty, int startx, int width, char *string, chtype color);
+void box_title(WINDOW* , int, int, int ,int, int, int, int);
+void func(char *name);
+void switchFunc(int*, MENU*);
+
+int scaner(char *path, char *choices[], int *size){
+	int i=0, f=0;
 	
 	d = opendir(path);
 	if( d == NULL ){ perror("opendir"); return 1; }
@@ -43,19 +48,18 @@ int scaner(char *path){
 			strcmp( dir->d_name, ".." ) == 0){
 			continue;
 	}
+        choices[i] = dir->d_name;
+
 		if(dir->d_type == DT_DIR){
 			dir_arr[f] = dir->d_name;
-			printf("%s\n", dir_arr[f]);
 			f++;
 		} 
+        printf("%s\n", choices[i]);
+        i++;
 	}
+    *size = i;
 	closedir(d);
 }
-
-void print_title(WINDOW *win, int starty, int startx, int width, char *string, chtype color);
-void box_title(WINDOW* , int, int, int ,int, int, int, int);
-void func(char *name);
-void switchFunc(int*, MENU*);
 
 void dirScan(char path[], struct dirent **namelist, 
             char *choices[], int *size){
@@ -105,11 +109,13 @@ void interfaceFunc(MENU *my_menu, WINDOW *win, ITEM **my_item, char *path, int t
 
 int main(){	
     // получем список файлов в директории 
-    // strcpy(new_path, path_left);
 
-    dirScan(path_left, namelist_left, choices_left, &size_left); 
-    // scaner(path_left);  
-    dirScan(path_right, namelist_right, choices_right, &size_right); 
+    // dirScan(path_left, namelist_left, choices_left, &size_left); 
+    // dirScan(path_right, namelist_right, choices_right, &size_right); 
+
+    scaner(path_left, choices_left, &size_left);  
+    printf("\nsize_left: %d\n", size_left);
+
 
     my_items_left = (ITEM **)calloc(size_left, sizeof(ITEM *));
     for(int i = 0; i < size_left; ++i){
@@ -244,8 +250,8 @@ void func(char *name){
     {
         for(int i=0; i<dir_size; i++){
             if(strcmp(dir_arr[i], name) == 0){                
-                snprintf(&new_path, sizeof new_path, "%s%s\0", path_left, dir_arr[c-1]);
-                scaner(new_path);
+                // snprintf(&new_path, sizeof new_path, "%s%s\0", path_left, dir_arr[c-1]);
+                // scaner(new_path);
                 print_title(win_left, 1, 0, COLS/2, new_path, COLOR_PAIR(1));
                 break;
             }
@@ -320,12 +326,7 @@ void print_title(WINDOW *win, int starty, int startx, int width, char *string, c
 \/ 2. переключение окон
 \/ 3. кол-во видимых эл-ов в меню 
 4. переход по папкам
+5. оптимизация кода
+6. запуск приложений
 
 */
-
-/* 
-?
-1) calloc
-2) path
-
- */
