@@ -7,16 +7,16 @@
 
 char *choices_left[];   // список всех файлов в директории
 char *choices_right[];
-char *dir_arr[255];     // список папок в директории
+// char *dir_arr[255];     // список папок в директории
 char *dir_path;
 int dir_size=0;
 int arr_size;
 WINDOW *win_left;
 WINDOW *win_right;
 
-char *path_left="/";
+// char *path_left="/";
 char *path_right="/";
-char new_path[512];
+// char new_path[512];
 int size_left, size_right; 
 int c, n_choices, cycle = 1, win_tab = 0;;
 struct dirent **namelist_left;
@@ -26,12 +26,38 @@ ITEM **my_items_right;
 MENU *my_menu_left;
 MENU *my_menu_right;
 
+DIR *d;
+struct dirent *dir;
+char *dir_arr[255];
+char new_path[255];
+char path_left[255]={"/"};
+
+int scaner(char *path){
+	int f=0;
+	
+	d = opendir(path);
+	if( d == NULL ){ perror("opendir"); return 1; }
+
+	while((dir = readdir(d))){
+		if(strcmp( dir->d_name, "." ) == 0 || 
+			strcmp( dir->d_name, ".." ) == 0){
+			continue;
+	}
+		if(dir->d_type == DT_DIR){
+			dir_arr[f] = dir->d_name;
+			printf("%s\n", dir_arr[f]);
+			f++;
+		} 
+	}
+	closedir(d);
+}
+
 void print_title(WINDOW *win, int starty, int startx, int width, char *string, chtype color);
 void box_title(WINDOW* , int, int, int ,int, int, int, int);
 void func(char *name);
 void switchFunc(int*, MENU*);
 
-void dirScan(char *path, struct dirent **namelist, 
+void dirScan(char path[], struct dirent **namelist, 
             char *choices[], int *size){
 
     *size = scandir(path, &namelist, NULL, alphasort);
@@ -82,6 +108,7 @@ int main(){
     // strcpy(new_path, path_left);
 
     dirScan(path_left, namelist_left, choices_left, &size_left); 
+    // scaner(path_left);  
     dirScan(path_right, namelist_right, choices_right, &size_right); 
 
     my_items_left = (ITEM **)calloc(size_left, sizeof(ITEM *));
@@ -217,8 +244,8 @@ void func(char *name){
     {
         for(int i=0; i<dir_size; i++){
             if(strcmp(dir_arr[i], name) == 0){                
-                snprintf(new_path, sizeof new_path, "%s%s", path_left, name);
-                chdir(".");
+                snprintf(&new_path, sizeof new_path, "%s%s\0", path_left, dir_arr[c-1]);
+                scaner(new_path);
                 print_title(win_left, 1, 0, COLS/2, new_path, COLOR_PAIR(1));
                 break;
             }
@@ -233,8 +260,8 @@ void func(char *name){
         my_menu_left = new_menu((ITEM **)my_items_left);
 
         set_menu_win(my_menu_left, win_left);           // отнош. меню к окну
-    set_menu_sub(my_menu_left, derwin(win_left, LINES-7, (COLS/2)-2, 3, 1)); // создание подокна
-    set_menu_format(my_menu_left, LINES-7, 1);      // кол-во выводимых строк, столбцов за раз
+        set_menu_sub(my_menu_left, derwin(win_left, LINES-7, (COLS/2)-2, 3, 1)); // создание подокна
+        set_menu_format(my_menu_left, LINES-7, 1);      // кол-во выводимых строк, столбцов за раз
 
 
         wrefresh(win_left);

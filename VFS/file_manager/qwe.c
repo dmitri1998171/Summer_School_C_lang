@@ -10,9 +10,8 @@
 DIR *d;
 struct dirent *dir;
 char *dir_arr[255];
-char *path="/";
-char *new_path;
-char *tree_path;
+char new_path[255];
+char path[255]={"/"};
 
 int scaner(char *path){
 	int f=0;
@@ -36,18 +35,11 @@ int scaner(char *path){
 
 int main(){
 	int c;
-	
-	// strcpy(&new_path, &path);
+		
  	scaner(path);
 	printf("\n");
 	scanf("%d", &c);
 	snprintf(&new_path, sizeof new_path, "%s%s\0", path, dir_arr[c-1]);
-	// strcat(path, dir_arr[c-1]);
-	// strcat();
-	printf("new_path: %s\n", &new_path);
-	
-	// chdir(new_path);
-	// getcwd(path, 100);
 	scaner(new_path);
 
   return 0;
