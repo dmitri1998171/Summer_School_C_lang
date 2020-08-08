@@ -4,6 +4,7 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <unistd.h>
+#include <wait.h>
 
 char *choices_left[255];   // список всех файлов в директории
 char *choices_right[255];
@@ -50,7 +51,7 @@ void scaner(char path[], char *choices[], int *size){
 			dir_arr[f] = dir->d_name;
 			f++;
 		} 
-        printf("%s\n", choices[i]);
+        // printf("%s\n", choices[i]);
         i++;
 	}
     *size = i;
@@ -64,9 +65,6 @@ void dirScan(char *path[], struct dirent **namelist,
     if (*size < 0) perror("scandir");
 
     for(int i=0; i < *size; i++){    // заполняем массив для меню
-        // if(strcmp( namelist[i]->d_name, "." ) == 0 || 
-		// 	strcmp( namelist[i]->d_name, ".." ) == 0)
-        //     { continue; }
         choices[i] = namelist[i]->d_name;
         
         if(namelist[i]->d_type == DT_DIR){
@@ -220,6 +218,7 @@ void switchFunc(int *c, MENU *menu){
 }
 
 void func(char *name){
+    pid_t pid;
     // if(win_tab == 0)
     // {
     //     for(int i=0; i<dir_size; i++){
@@ -246,23 +245,38 @@ void func(char *name){
 
     //     wrefresh(win_left);
     // }
-    // if(win_tab == 1)
-    // {
-    //     for(int i=0; i<dir_size; i++){
-    //         if(strcmp(dir_arr[i], name) == 0){
-    //             snprintf(new_path, sizeof new_path, "%s%s", path_right, name);
-    //             print_title(win_right, 1, 0, COLS/2, new_path, COLOR_PAIR(1));
-    //             break;
-    //         }
-    //     }
-    //     dirScan(path_right, namelist_right, choices_right, &size_right); 
-
-    //     my_items_right = (ITEM **)calloc(size_right, sizeof(ITEM *));
-    //     for(int i = 0; i < size_right; ++i){
-    //         my_items_right[i] = new_item(choices_right[i], 0);
-    //         set_item_userptr(my_items_right[i], func);
-    // }
-    // }
+    if(win_tab == 1)
+    {
+        for(int i=0; i<size_right; i++)
+        {
+            if(strcmp(dir_arr[i], name) == 0)
+            {
+                snprintf(new_path, sizeof new_path, "%s/%s", *path_right, name);
+                print_title(win_right, 1, 0, COLS/2, new_path, COLOR_PAIR(1));
+                
+                dirScan(path_right, namelist_right, choices_right, &size_right); 
+                
+                my_items_right = (ITEM **)calloc(size_right, sizeof(ITEM *));
+                for(int i = 0; i < size_right; ++i)
+                {
+                    my_items_right[i] = new_item(choices_right[i], 0);
+                    set_item_userptr(my_items_right[i], func);
+                break;
+                }
+            }
+            else
+            {
+                pid = fork();
+                if(pid == 0)
+                {
+                    execl(name, name, NULL);
+                    // printf("child pid: %d\tppid: %d\n", getpid(), getppid());
+                    exit(0);
+                }
+                wait(&pid);
+            }
+        }
+    }
 }	
 
 void box_title(WINDOW *wnd, int box_x, int box_y, int line_y, int line_x, int line_w, int lt_x, int rt_x){
