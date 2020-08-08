@@ -37,9 +37,12 @@ int main(){
 	int c;
 		
  	scaner(path);
-	printf("\n");
+	
+	printf("\nchoice a folder: ");
 	scanf("%d", &c);
-	snprintf(&new_path, sizeof new_path, "%s%s\0", path, dir_arr[c-1]);
+
+	snprintf(new_path, sizeof new_path, "%s%s\0", path, dir_arr[c-1]);
+	printf("new_path: %s\n\n", new_path);
 	scaner(new_path);
 
   return 0;
