@@ -1,6 +1,4 @@
-main:
-	clear && gcc main.c  -Wall -g -o main -lmenu -lncurses
-menu:
-	clear && gcc menu.c -Wall -g -o menu -lncurses && ./menu
+all:
+	clear && gcc main.c -Wall -g -o main -lncurses
 clean:
-	rm -rf main menu
+	rm -rf main

@@ -1,289 +1,64 @@
-#include <menu.h>
-#include <string.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <dirent.h>
-#include <unistd.h>
+#include <ncurses.h>
+#include <dirent.h> 
+#include <sys/types.h> 
+#include <sys/param.h> 
+#include <sys/stat.h> 
+#include <unistd.h> 
+#include <stdio.h>
+#include <stdlib.h> 
+#include <string.h> 
+#include <errno.h>
 #include <wait.h>
 
-char *choices_left[255];   // список всех файлов в директории
-char *choices_right[255];
-char *dir_arr[255];        // список папок в директории
-char new_path[255];
-char *path_left[255]={"/"}; 
-char *path_right[255]={"/home/dmitry"};
-int dir_size=0;
-int size_left, size_right; 
-int c, cycle = 1, win_tab = 0;
-struct dirent **namelist_left;
-struct dirent **namelist_right;
-struct dirent *dir;
+#define ARR_SIZE 255
+
+char *dir_arr_left[ARR_SIZE];
+char *dir_arr_right[ARR_SIZE];
+char new_path[ARR_SIZE];
+char path_left[ARR_SIZE];
+char path_right[ARR_SIZE];
+char *choices_right[ARR_SIZE];
+char *choices_left[ARR_SIZE];
+int size_left, size_right;
+int dir_size_left, dir_size_right;
+int highlight_left = 1, highlight_right = 1;
 WINDOW *win_left;
 WINDOW *win_right;
-ITEM **my_items_left;
-ITEM **my_items_right;
-MENU *my_menu_left;
-MENU *my_menu_right;
-DIR *d;
 
+void print_menu(WINDOW *menu_win, int highlight, char *choices[], int *size);
+void switchFunc(int *, int *, int *, int *, int *);
+void enterFunc(WINDOW *, char **, char *, char **, int *, int *, int *);
 
-void print_title(WINDOW *win, int starty, int startx, int width, char *string, chtype color);
-void box_title(WINDOW* , int, int, int ,int, int, int, int);
-void func(char *name);
-void switchFunc(int*, MENU*);
-
-void scaner(char path[], char *choices[], int *size){
+void scaner(char path[], char *choices[], char *dir_arr[], int *size, int *dir_size){
 	int i=0, f=0;
-	
+	struct dirent *dir;
+    DIR *d;
+
 	d = opendir(path);
 	if( d == NULL ){ perror("opendir"); exit(1); }
 
-	while((dir = readdir(d)))
-    {
-		if(strcmp( dir->d_name, "." ) == 0 || 
-			strcmp( dir->d_name, ".." ) == 0)
-            { continue; }
-
+	while((dir = readdir(d))){
+		if(strcmp( dir->d_name, "." ) == 0){
+			continue;
+	    }
         choices[i] = dir->d_name;
 
-		if(dir->d_type == DT_DIR)
-        {
+		if(dir->d_type == DT_DIR){
 			dir_arr[f] = dir->d_name;
 			f++;
 		} 
-        // printf("%s\n", choices[i]);
         i++;
 	}
     *size = i;
+    *dir_size = f;
 	closedir(d);
 }
 
-void dirScan(char *path[], struct dirent **namelist, 
-            char *choices[], int *size){
-
-    *size = scandir(*path, &namelist, NULL, alphasort);
-    if (*size < 0) perror("scandir");
-
-    for(int i=0; i < *size; i++){    // заполняем массив для меню
-        choices[i] = namelist[i]->d_name;
-        
-        if(namelist[i]->d_type == DT_DIR){
-            dir_arr[dir_size] = namelist[i]->d_name;
-            dir_size++;
-        }
-        free(namelist[i]);
-    }
-    free(namelist);   
-}
-
-void interfaceFunc(MENU **my_menu, WINDOW **win, ITEM ***my_item, char *path, int *size, int x){
-
-    /* Создаем окно */
-    *win = newwin(LINES-4, COLS/2, 3, x);
-    keypad(*win, TRUE);
-
-    /* Создаем меню */
-    *my_menu = new_menu((ITEM **)*my_item);
-    keypad(*win, TRUE);
-
-    /* Задаем окно */
-    set_menu_win(*my_menu, *win);                // отнош. меню к окну
-    set_menu_sub(*my_menu, derwin(*win, *size, COLS/2-2, 3, 1)); // создание подокна
-    set_menu_format(*my_menu, *size, 1);            // кол-во выводимых строк, столбцов за раз
-    set_menu_mark(*my_menu, " * ");              // указатель текущ. эл-та
-
-    print_title(*win, 1, 0, COLS/2, path, COLOR_PAIR(1));
-    box_title(*win, 0, 0, 2, 1, COLS/2-2, 0, COLS/2-1);
-
-    /* Публикуем меню */
-	post_menu(*my_menu);
-	wrefresh(*win);
-}
-
-void setItemsFunc(ITEM ***my_item, int *size, char *choices[]){
-    *my_item = (ITEM **)calloc(*size, sizeof(ITEM *));
-    for(int i = 0; i < *size; ++i){
-        *my_item[i] = new_item(choices[i], 0);
-        set_item_userptr(*my_item[i], func);
-    }
-}
-
-int main(){	
-    // получем список файлов в директории 
-    // snprintf(new_path, sizeof new_path, "%s%s\0", path_right, dir_arr[1]);
-    dirScan(path_left, namelist_left, choices_left, &size_left); 
-    dirScan(path_right, namelist_right, choices_right, &size_right); 
-
-    // scaner(path_left, choices_left, &size_left);  
-    printf("\n size_left: %d\n size_right: %d\n", size_left, size_right);
-    
-    for(int i=0; i<size_right; i++)
-    {
-        printf("%s\n", choices_right[i]);
-    }
-    // setItemsFunc(&my_items_left, &size_left, choices_left);
-    // setItemsFunc(&my_items_right, &size_right, choices_right);
-
-    my_items_left = (ITEM **)calloc(size_left, sizeof(ITEM *));
-    for(int i = 0; i < size_left; ++i){
-        my_items_left[i] = new_item(choices_left[i], 0);
-        set_item_userptr(my_items_left[i], func);
-    }
-
-    my_items_right = (ITEM **)calloc(size_right, sizeof(ITEM *));
-    for(int i = 0; i < size_right; ++i){
-        my_items_right[i] = new_item(choices_right[i], 0);
-        set_item_userptr(my_items_right[i], func);
-    }
-// =========================================================
-    
-    // exit(0);
-
-	initscr();
-	start_color();
-    cbreak();
-    noecho();
-	keypad(stdscr, TRUE);
-	init_pair(1, COLOR_RED, COLOR_BLACK);
-
-    interfaceFunc(&my_menu_left, &win_left, &my_items_left, *path_left, &size_left, 0);
-    interfaceFunc(&my_menu_right, &win_right, &my_items_right, *path_right, &size_right, COLS/2);
-
-    char *title="---------- File Manager ----------";
-    print_title(stdscr, 1, 0, COLS, title, COLOR_PAIR(1));
-	mvprintw(LINES - 1, 1, "Tab - switch panel  pageUp - scroll up  pageDown - scroll down  F1 - exit");
-	refresh();
-
-	while(cycle){
-        /* переключение между окнами */
-        if(win_tab == 0) {c = wgetch(win_left); switchFunc(&c, my_menu_left);}
-        if(win_tab == 1) {c = wgetch(win_right); switchFunc(&c, my_menu_right);}        
-
-        if(c == KEY_F(1)) cycle = 0;
-
-        if(c == '\t'){ 
-            win_tab += 1;
-            if(win_tab > 1) win_tab = 0;
-        }
-
-        wrefresh(win_left);
-        wrefresh(win_right);
-	}	
-
-	/* Удаляем меню и освождаем память */
-    unpost_menu(my_menu_left);
-    unpost_menu(my_menu_right);
-    free_menu(my_menu_left);
-    free_menu(my_menu_right);
-
-    for(int i = 0; i < size_left; ++i){
-        free_item(my_items_left[i]);
-    }
-
-    for(int i = 0; i < size_right; ++i){
-        free_item(my_items_right[i]);
-    }
-
-	endwin();
-}
-
-void switchFunc(int *c, MENU *menu){
-    switch(*c){
-        case KEY_DOWN:
-            menu_driver(menu, REQ_DOWN_ITEM);
-            break;
-        case KEY_UP:
-            menu_driver(menu, REQ_UP_ITEM);
-            break;
-        case KEY_NPAGE:
-            menu_driver(menu, REQ_SCR_DPAGE);
-            break;
-        case KEY_PPAGE:
-            menu_driver(menu, REQ_SCR_UPAGE);
-            break;
-        
-        case '\n':        // Enter 
-        {	
-            ITEM *cur;
-            void (*p)(char *);
-
-            cur = current_item(menu);
-            p = item_userptr(cur);
-            p((char *)item_name(cur));
-            pos_menu_cursor(menu);
-            break;
-        }
-        break;
-    }
-}
-
-void func(char *name){
-    pid_t pid;
-    // if(win_tab == 0)
-    // {
-    //     for(int i=0; i<dir_size; i++){
-    //         if(strcmp(dir_arr[i], name) == 0){                
-    //             // snprintf(&new_path, sizeof new_path, "%s%s\0", path_left, dir_arr[c-1]);
-    //             // scaner(new_path);
-    //             print_title(win_left, 1, 0, COLS/2, new_path, COLOR_PAIR(1));
-    //             break;
-    //         }
-    //     }
-    //     dirScan(new_path, namelist_left, choices_left, &size_left); 
-
-    //     my_items_left = (ITEM **)calloc(size_left, sizeof(ITEM *));
-    //     for(int i = 0; i < size_left; ++i){
-    //         my_items_left[i] = new_item(choices_left[i], 0);
-    //         // set_item_userptr(my_items_left[i], func);
-    //     }
-    //     my_menu_left = new_menu((ITEM **)my_items_left);
-
-    //     set_menu_win(my_menu_left, win_left);           // отнош. меню к окну
-    //     set_menu_sub(my_menu_left, derwin(win_left, LINES-7, (COLS/2)-2, 3, 1)); // создание подокна
-    //     set_menu_format(my_menu_left, LINES-7, 1);      // кол-во выводимых строк, столбцов за раз
-
-
-    //     wrefresh(win_left);
-    // }
-    if(win_tab == 1)
-    {
-        for(int i=0; i<size_right; i++)
-        {
-            if(strcmp(dir_arr[i], name) == 0)
-            {
-                snprintf(new_path, sizeof new_path, "%s/%s", *path_right, name);
-                print_title(win_right, 1, 0, COLS/2, new_path, COLOR_PAIR(1));
-                
-                dirScan(path_right, namelist_right, choices_right, &size_right); 
-                
-                my_items_right = (ITEM **)calloc(size_right, sizeof(ITEM *));
-                for(int i = 0; i < size_right; ++i)
-                {
-                    my_items_right[i] = new_item(choices_right[i], 0);
-                    set_item_userptr(my_items_right[i], func);
-                break;
-                }
-            }
-            else
-            {
-                pid = fork();
-                if(pid == 0)
-                {
-                    execl(name, name, NULL);
-                    // printf("child pid: %d\tppid: %d\n", getpid(), getppid());
-                    exit(0);
-                }
-                wait(&pid);
-            }
-        }
-    }
-}	
-
 void box_title(WINDOW *wnd, int box_x, int box_y, int line_y, int line_x, int line_w, int lt_x, int rt_x){
     box(wnd, box_y, box_x);
-	mvwaddch(wnd, line_y, lt_x, ACS_LTEE);
+	// mvwaddch(wnd, line_y, lt_x, ACS_LTEE);
 	mvwhline(wnd, line_y, line_x, ACS_HLINE, line_w);
-	mvwaddch(wnd, line_y, rt_x, ACS_RTEE);
+	// mvwaddch(wnd, line_y, rt_x, ACS_RTEE);
 }
 
 void print_title(WINDOW *win, int starty, int startx, int width, char string[], chtype color){	
@@ -307,14 +82,143 @@ void print_title(WINDOW *win, int starty, int startx, int width, char string[], 
 	refresh();
 }
 
-/*
-    TODO
+void interfaceFunc(WINDOW **win, char *path, int *size, int x){
+    /* Создаем окно */
+    *win = newwin(LINES-4, COLS/2, 3, x);
+    keypad(*win, TRUE);
 
-\/ 1. Вывод во 2-ое окно
-\/ 2. переключение окон
-\/ 3. кол-во видимых эл-ов в меню 
-4. переход по папкам
-5. оптимизация кода
-6. запуск приложений
+    /* Рисуем границы */
+    print_title(*win, 1, 0, COLS/2, path, COLOR_PAIR(1));
+    box_title(*win, 0, 0, 2, 1, COLS/2-2, 0, COLS/2-1);
 
-*/
+	wrefresh(*win);
+}
+
+void displayFunc(){
+    initscr();
+    start_color();
+	noecho();
+	cbreak();
+    init_pair(1, COLOR_RED, COLOR_BLACK);
+
+    chdir(".");
+    getcwd(path_left, ARR_SIZE);
+    getcwd(path_right, ARR_SIZE);
+
+    scaner(path_left, choices_left, dir_arr_left, 
+            &size_left, &dir_size_left);
+    scaner(path_right, choices_right, dir_arr_right, 
+            &size_right, &dir_size_right);
+    printf("\n");
+
+    char *title="---------- File Manager ----------";
+    print_title(stdscr, 1, 0, COLS, title, COLOR_PAIR(1));
+	mvprintw(LINES - 1, 1, "Tab - switch panel  F1 - exit");
+
+    interfaceFunc(&win_left, path_left, &size_left, 0);
+    interfaceFunc(&win_right, path_right, &size_right, COLS/2);
+    refresh();
+
+	print_menu(win_left, highlight_left, choices_left, &size_left);
+    print_menu(win_right, highlight_right, choices_right, &size_right);
+}
+
+int main(){	
+	int c, cycle = 1, win_tab = 0;
+    
+    displayFunc();
+    
+	while(cycle)
+	{	
+        /* переключение между окнами */
+        if(win_tab == 0){
+            c = wgetch(win_left); 
+            switchFunc(&c, &highlight_left, &size_left, &cycle, &win_tab);
+            if(c == 10) enterFunc(win_left, choices_left, path_left, 
+            dir_arr_left, &highlight_left, &size_left, &dir_size_left);
+            print_menu(win_left, highlight_left, choices_left, &size_left);
+        }
+        if(win_tab == 1){
+            c = wgetch(win_right);
+            switchFunc(&c, &highlight_right, &size_right, &cycle, &win_tab);
+            if(c == 10) enterFunc(win_right, choices_right, path_right,
+            dir_arr_right, &highlight_right, &size_right, &dir_size_right);
+            print_menu(win_right, highlight_right, choices_right, &size_right);   
+        }
+	}	
+	endwin();
+	return 0;
+}
+
+void switchFunc(int *c, int *highlight, int *size, int *cycle, int *win_tab){
+    switch(*c){
+        case KEY_DOWN:
+            if(highlight == size)
+                *highlight = 1;
+            else 
+                ++*highlight;  
+            break;
+        case KEY_UP:
+            if(*highlight == 1)
+                highlight = size;
+            else
+                --*highlight;
+            break;
+        case KEY_F(1):
+            *cycle = 0;
+            break;
+        case '\t':
+            *win_tab += 1;
+            if(*win_tab > 1) *win_tab = 0;
+            break;
+    }
+}
+
+void enterFunc(WINDOW *win, char *choices[], char *path, 
+    char *dir_arr[], int *highlight, int *size, int *dir_size){   
+
+    for(int i=0; i < *dir_size; i++){
+        if(strcmp(choices[*highlight-1], dir_arr[i]) == 0){
+            chdir(choices[*highlight-1]);
+            getcwd(new_path, ARR_SIZE);
+
+            wclear(win);
+            scaner(new_path, choices, dir_arr, size, dir_size);
+            
+            print_title(win, 1, 0, COLS/2, new_path, COLOR_PAIR(1));
+            box_title(win, 0, 0, 2, 1, COLS/2-2, 0, COLS/2-1);
+
+            *highlight = 1;   
+        }
+        else {
+            pid_t pid = fork();
+            if(pid == 0){
+                endwin();
+                execl(choices[*highlight-1], choices[*highlight-1], NULL);
+                exit(0);
+            }
+            wait(&pid);
+        }
+    }
+    displayFunc();
+}
+
+void print_menu(WINDOW *menu_win, int highlight, char *choices[], int *size)
+{
+	int x, y, i;
+
+	x = 2;
+	y = 3;
+	box(menu_win, 0, 0);
+	for(i = 0; i < *size; ++i)
+	{	if(highlight == i + 1) /* High light the present choice */
+		{	wattron(menu_win, A_REVERSE); 
+			mvwprintw(menu_win, y, x, "%s", choices[i]);
+			wattroff(menu_win, A_REVERSE);
+		}
+		else
+			mvwprintw(menu_win, y, x, "%s", choices[i]);
+		++y;
+	}
+	wrefresh(menu_win);
+}
