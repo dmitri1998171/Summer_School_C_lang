@@ -28,6 +28,7 @@ WINDOW *win_right;
 void print_menu(WINDOW *menu_win, int highlight, char *choices[], int *size);
 void switchFunc(int *, int *, int *, int *, int *);
 void enterFunc(WINDOW *, char **, char *, char **, int *, int *, int *);
+void copyFunc(char*);
 
 void scaner(char path[], char *choices[], char *dir_arr[], int *size, int *dir_size){
 	int i=0, f=0;
@@ -56,9 +57,7 @@ void scaner(char path[], char *choices[], char *dir_arr[], int *size, int *dir_s
 
 void box_title(WINDOW *wnd, int box_x, int box_y, int line_y, int line_x, int line_w, int lt_x, int rt_x){
     box(wnd, box_y, box_x);
-	// mvwaddch(wnd, line_y, lt_x, ACS_LTEE);
 	mvwhline(wnd, line_y, line_x, ACS_HLINE, line_w);
-	// mvwaddch(wnd, line_y, rt_x, ACS_RTEE);
 }
 
 void print_title(WINDOW *win, int starty, int startx, int width, char string[], chtype color){	
@@ -113,7 +112,7 @@ void displayFunc(){
 
     char *title="---------- File Manager ----------";
     print_title(stdscr, 1, 0, COLS, title, COLOR_PAIR(1));
-	mvprintw(LINES - 1, 1, "Tab - switch panel  F1 - exit");
+	mvprintw(LINES - 1, 1, "Tab - Switch panel  F1 - Quit  F5 - Copy");
 
     interfaceFunc(&win_left, path_left, &size_left, 0);
     interfaceFunc(&win_right, path_right, &size_right, COLS/2);
@@ -164,9 +163,14 @@ void switchFunc(int *c, int *highlight, int *size, int *cycle, int *win_tab){
             else
                 --*highlight;
             break;
+
         case KEY_F(1):
             *cycle = 0;
             break;
+        case KEY_F(5):
+            copyFunc("test.txt");
+            break;
+
         case '\t':
             *win_tab += 1;
             if(*win_tab > 1) *win_tab = 0;
@@ -177,6 +181,7 @@ void switchFunc(int *c, int *highlight, int *size, int *cycle, int *win_tab){
 void enterFunc(WINDOW *win, char *choices[], char *path, 
     char *dir_arr[], int *highlight, int *size, int *dir_size){   
 
+    int check = 0;
     for(int i=0; i < *dir_size; i++){
         if(strcmp(choices[*highlight-1], dir_arr[i]) == 0){
             chdir(choices[*highlight-1]);
@@ -188,27 +193,60 @@ void enterFunc(WINDOW *win, char *choices[], char *path,
             print_title(win, 1, 0, COLS/2, new_path, COLOR_PAIR(1));
             box_title(win, 0, 0, 2, 1, COLS/2-2, 0, COLS/2-1);
 
-            *highlight = 1;   
-        }
-        else {
-            pid_t pid = fork();
-            if(pid == 0){
-                endwin();
-                execl(choices[*highlight-1], choices[*highlight-1], NULL);
-                exit(0);
-            }
-            wait(&pid);
+            *highlight = 1;
+            check +=1;   
         }
     }
-    displayFunc();
+    if(check == 0){
+        pid_t pid = fork();
+        if(pid == 0){
+            endwin();
+            execl(choices[*highlight-1], choices[*highlight-1], NULL);
+            exit(0);
+        }
+        wait(&pid);
+        displayFunc();
+    }
+    refresh();
+    wrefresh(win_left);
+    wrefresh(win_right);
 }
 
-void print_menu(WINDOW *menu_win, int highlight, char *choices[], int *size)
-{
-	int x, y, i;
+void copyFunc(char *name){
+    int h=6, w=50; 
+    WINDOW *mycopywin;
+    WINDOW *mysubwin;
 
-	x = 2;
-	y = 3;
+    curs_set(0);
+    start_color();
+    init_pair(1, COLOR_RED, COLOR_BLACK);
+    
+    mycopywin = newwin(h, w, (LINES/2)-(h/2), (COLS/2)-(w/2));
+    box(mycopywin, 0, 0);
+
+    wattron(mycopywin, COLOR_PAIR(1));
+    mvwprintw(mycopywin, h-5, 2, "Copy: ");
+    wattroff(mycopywin, COLOR_PAIR(1));
+    mvwprintw(mycopywin, h-5, 8, name);
+
+    mysubwin = derwin(mycopywin, 3, w-2, 2, 1);
+    box(mysubwin, 0,0);
+
+    wattroff(mycopywin, COLOR_PAIR(1));
+    for(int n = 2; n < w-2; n++){
+        mvwaddch(mycopywin, h-3, n, '#');
+        mvwprintw(mycopywin, h-5, strlen(name)+10, "%d%%", (n*2)+6);
+        wrefresh(mycopywin);
+        usleep(100000);
+    }
+    wgetch(mycopywin);
+    delwin(mysubwin);
+    delwin(mycopywin);
+}
+
+void print_menu(WINDOW *menu_win, int highlight, char *choices[], int *size){
+	int i, x = 2, y = 3;
+
 	box(menu_win, 0, 0);
 	for(i = 0; i < *size; ++i)
 	{	if(highlight == i + 1) /* High light the present choice */
