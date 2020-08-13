@@ -2,7 +2,8 @@
 #include <dirent.h> 
 #include <sys/types.h> 
 #include <sys/param.h> 
-#include <sys/stat.h> 
+#include <sys/stat.h>
+#include <fcntl.h> 
 #include <unistd.h> 
 #include <stdio.h>
 #include <stdlib.h> 
@@ -11,6 +12,7 @@
 #include <wait.h>
 
 #define ARR_SIZE 255
+#define BUFF_SIZE 5    // кол-во байт, считываемых за раз 
 
 char *dir_arr_left[ARR_SIZE];
 char *dir_arr_right[ARR_SIZE];
@@ -25,10 +27,45 @@ int highlight_left = 1, highlight_right = 1;
 WINDOW *win_left;
 WINDOW *win_right;
 
+char *buf[BUFF_SIZE];
+int fdr, fdw, ret;
+
 void print_menu(WINDOW *menu_win, int highlight, char *choices[], int *size);
-void switchFunc(int *, int *, int *, int *, int *);
+// void switchFunc(WINDOW *, char *, char **, int *, char **, int *, int *, int *, int *, int *);
+void switchFunc(WINDOW *win, char *path, char *dir_arr[], int *dir_size, char *choices[], int *c, int *highlight, 
+    int *size, int *cycle, int *win_tab);
 void enterFunc(WINDOW *, char **, char *, char **, int *, int *, int *);
-void copyFunc(char*);
+void copyInterfaceFunc(char*);
+
+void renameFunc(char path_r[], char path_w[]){
+    char name[255];
+    char ext[5];
+    
+    strcpy(path_w, path_r);
+    strcpy(name, strtok(path_w, "."));
+    strcpy(ext, strtok(NULL, "."));
+    strcat(name, "(1).");
+    strcat(name, ext);
+    strcpy(path_w, name);
+}
+
+void copyFunc(char path_r[]){
+    char path_w[ARR_SIZE];
+
+    renameFunc(path_r, path_w);
+    
+    fdr = open(path_r, O_RDONLY);
+    fdw = open(path_w, O_CREAT | O_WRONLY, S_IRWXU);
+
+    while((ret = read(fdr, &buf, BUFF_SIZE)) != 0){
+        if(ret == -1) perror("Read error");
+
+        write(fdw, &buf, BUFF_SIZE);
+    }
+
+    close(fdr);
+    close(fdw);
+}
 
 void scaner(char path[], char *choices[], char *dir_arr[], int *size, int *dir_size){
 	int i=0, f=0;
@@ -132,16 +169,24 @@ int main(){
         /* переключение между окнами */
         if(win_tab == 0){
             c = wgetch(win_left); 
-            switchFunc(&c, &highlight_left, &size_left, &cycle, &win_tab);
+            switchFunc(win_left, path_left, dir_arr_left, 
+                    &dir_size_left, choices_left, &c, &highlight_left, 
+                    &size_left, &cycle, &win_tab);
+
             if(c == 10) enterFunc(win_left, choices_left, path_left, 
             dir_arr_left, &highlight_left, &size_left, &dir_size_left);
+
             print_menu(win_left, highlight_left, choices_left, &size_left);
         }
         if(win_tab == 1){
             c = wgetch(win_right);
-            switchFunc(&c, &highlight_right, &size_right, &cycle, &win_tab);
+            switchFunc(win_right, path_right, dir_arr_right, 
+                    &dir_size_right, choices_right, &c, &highlight_right, 
+                    &size_right, &cycle, &win_tab);
+            
             if(c == 10) enterFunc(win_right, choices_right, path_right,
             dir_arr_right, &highlight_right, &size_right, &dir_size_right);
+            
             print_menu(win_right, highlight_right, choices_right, &size_right);   
         }
 	}	
@@ -149,7 +194,22 @@ int main(){
 	return 0;
 }
 
-void switchFunc(int *c, int *highlight, int *size, int *cycle, int *win_tab){
+void reloadWinFunc(WINDOW *win, char *choices[], char *path, 
+    char *dir_arr[], int *highlight, int *size, int *dir_size){
+    
+    getcwd(new_path, ARR_SIZE);
+    wclear(win);
+    scaner(new_path, choices, dir_arr, size, dir_size);
+    
+    print_title(win, 1, 0, COLS/2, new_path, COLOR_PAIR(1));
+    box_title(win, 0, 0, 2, 1, COLS/2-2, 0, COLS/2-1);
+}
+
+void switchFunc(WINDOW *win, char *path, char *dir_arr[], 
+                int *dir_size, char *choices[], int *c, 
+                int *highlight, int *size, int *cycle, 
+                int *win_tab){
+
     switch(*c){
         case KEY_DOWN:
             if(highlight == size)
@@ -168,7 +228,9 @@ void switchFunc(int *c, int *highlight, int *size, int *cycle, int *win_tab){
             *cycle = 0;
             break;
         case KEY_F(5):
-            copyFunc("test.txt");
+            copyFunc(choices[*highlight-1]);
+            reloadWinFunc(win, choices, path, dir_arr, 
+                highlight, size, dir_size);
             break;
 
         case '\t':
@@ -185,13 +247,8 @@ void enterFunc(WINDOW *win, char *choices[], char *path,
     for(int i=0; i < *dir_size; i++){
         if(strcmp(choices[*highlight-1], dir_arr[i]) == 0){
             chdir(choices[*highlight-1]);
-            getcwd(new_path, ARR_SIZE);
-
-            wclear(win);
-            scaner(new_path, choices, dir_arr, size, dir_size);
             
-            print_title(win, 1, 0, COLS/2, new_path, COLOR_PAIR(1));
-            box_title(win, 0, 0, 2, 1, COLS/2-2, 0, COLS/2-1);
+            reloadWinFunc(win, choices, path, dir_arr, highlight, size, dir_size);
 
             *highlight = 1;
             check +=1;   
@@ -212,7 +269,7 @@ void enterFunc(WINDOW *win, char *choices[], char *path,
     wrefresh(win_right);
 }
 
-void copyFunc(char *name){
+void copyInterfaceFunc(char *name){
     int h=6, w=50; 
     WINDOW *mycopywin;
     WINDOW *mysubwin;
