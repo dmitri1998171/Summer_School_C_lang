@@ -1,3 +1,4 @@
 all:
-	clear && gcc main.c -o main && ./main
-clean: rm -rf main
+	clear && gcc -g main.c -o main
+clean:
+	rm -rf main
