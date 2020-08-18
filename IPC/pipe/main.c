@@ -5,13 +5,15 @@
 #include <sys/wait.h>
 #include <malloc.h>
 
-void splitFunc(char str[], char *sep, char c1[]){
+#define N 15
+
+void splitFunc(char str[], char *sep, char c1[N][N]){
     char *t1;
     int i = 0;
 
     t1 = strtok(str, "|");
     while (t1 != NULL) {
-        strcpy(&c1[i], t1);
+        strcpy(c1[i], t1);
         t1 = strtok(NULL, "|");
         i++;
     }
@@ -19,9 +21,9 @@ void splitFunc(char str[], char *sep, char c1[]){
 
 int main(){
     char str[255];   // исходная строка
-    char c1[15][15]; // команды
-    char c2[15][15]; // аргументы 1-ой команды
-    char c3[15][15]; // аргументы 2-ой команды
+    char c1[N][N]; // команды
+    char c2[N][N]; // аргументы 1-ой команды
+    char c3[N][N]; // аргументы 2-ой команды
     char *t1, *t2, *t3;
     int i=0, j=0, k=0;
     int stat;
@@ -40,6 +42,10 @@ int main(){
     }
     
     // splitFunc(str, "|", c1);
+    // printf("c1[0]: %s\tc1[1]: %s\n", c1[0], c1[1]);
+
+    // splitFunc(c1[0], " ", c2);
+    // printf("c2[0]: %s\tc2[1]: %s\n", c2[0], c2[1]);
 
     // разбиваем 1-ую команду на аргументы
     t2 = strtok(c1[0], " ");
