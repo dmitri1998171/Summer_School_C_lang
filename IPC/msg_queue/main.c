@@ -20,20 +20,28 @@ int main(){
     message_buf sbuf;
     size_t buf_length;
 
-    if ((msqid = msgget(key, msgflg )) < 0) {
+    // создаем очередь
+    if ((msqid = msgget(key, msgflg )) < 0){
         perror("msgget");
         exit(1); }
 
+    // заполняем структуру
     sbuf.mtype = 1;
     (void) strcpy(sbuf.mtext, "Hello");
     buf_length = strlen(sbuf.mtext) + 1 ;
     
-    if (msgsnd(msqid, &sbuf, buf_length, IPC_NOWAIT) < 0) {
+    // отпр. сообщ.
+    if (msgsnd(msqid, &sbuf, buf_length, IPC_NOWAIT) < 0){
        printf ("%d, %d, %s, %d\n", msqid, sbuf.mtype, sbuf.mtext, buf_length);
         perror("msgsnd");
         exit(1); }
 
-    else printf("Message Sent\n");
+    // получ. ответ
+    if (msgrcv(msqid, &sbuf, MSGSZ, 1, 0) < 0){
+        perror("msgrcv");
+        exit(1);}
+
+    printf("%s\n", sbuf.mtext);
       
-    exit(0);
+    return 0;
 }

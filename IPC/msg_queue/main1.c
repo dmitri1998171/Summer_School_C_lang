@@ -2,6 +2,7 @@
 #include <sys/ipc.h>
 #include <sys/msg.h>
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -15,17 +16,33 @@ typedef struct msgbuf {
 
 int main(){
     int msqid;
-    key_t key = 10;
-    message_buf  rbuf;
+    int msgflg = IPC_CREAT | 0666;
+    key_t key=10;
+    message_buf sbuf;
+    size_t buf_length;
 
-    if ((msqid = msgget(key, 0666)) < 0) {
+    // создаем очередь
+    if ((msqid = msgget(key, msgflg )) < 0){
         perror("msgget");
         exit(1); }
 
-    if (msgrcv(msqid, &rbuf, MSGSZ, 1, 0) < 0) {
+    // получ. сообщ.
+    if (msgrcv(msqid, &sbuf, MSGSZ, 1, 0) < 0){
         perror("msgrcv");
         exit(1);}
 
-    printf("%s\n", rbuf.mtext);
-    exit(0);
+    printf("%s\n", sbuf.mtext);
+    
+    // заполняем структуру
+    sbuf.mtype = 1;
+    (void) strcpy(sbuf.mtext, "Hi");
+    buf_length = strlen(sbuf.mtext) + 1 ;
+    
+    // отпр. ответ
+    if (msgsnd(msqid, &sbuf, buf_length, IPC_NOWAIT) < 0){
+       printf ("%d, %d, %s, %d\n", msqid, sbuf.mtype, sbuf.mtext, buf_length);
+        perror("msgsnd");
+        exit(1); }
+
+    return 0;
 }
