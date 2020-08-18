@@ -174,9 +174,12 @@ int main(){
                     &size_left, &cycle, &win_tab);
 
 <<<<<<< HEAD
+<<<<<<< HEAD
             print_menu(win_left, highlight_left, choices_left, 
                     &size_left);
 =======
+=======
+>>>>>>> bf6f9f54a96439eea385b4fd5300804cbfe791e2
             if(c == 10) enterFunc(win_left, choices_left, path_left, 
             dir_arr_left, &highlight_left, &size_left, &dir_size_left);
 
@@ -190,9 +193,12 @@ int main(){
                     &size_right, &cycle, &win_tab);
             
 <<<<<<< HEAD
+<<<<<<< HEAD
             print_menu(win_right, highlight_right, choices_right, 
                     &size_right);   
 =======
+=======
+>>>>>>> bf6f9f54a96439eea385b4fd5300804cbfe791e2
             if(c == 10) enterFunc(win_right, choices_right, path_right,
             dir_arr_right, &highlight_right, &size_right, &dir_size_right);
             
@@ -208,17 +214,23 @@ void reloadWinFunc(WINDOW *win, char *choices[], char *path,
     char *dir_arr[], int *highlight, int *size, int *dir_size){
     
 <<<<<<< HEAD
+<<<<<<< HEAD
     getcwd(path, ARR_SIZE);
     wclear(win);
     scaner(path, choices, dir_arr, size, dir_size);
     
     print_title(win, 1, 0, COLS/2, path, COLOR_PAIR(1));
 =======
+=======
+>>>>>>> bf6f9f54a96439eea385b4fd5300804cbfe791e2
     getcwd(new_path, ARR_SIZE);
     wclear(win);
     scaner(new_path, choices, dir_arr, size, dir_size);
     
     print_title(win, 1, 0, COLS/2, new_path, COLOR_PAIR(1));
+<<<<<<< HEAD
+>>>>>>> bf6f9f54a96439eea385b4fd5300804cbfe791e2
+=======
 >>>>>>> bf6f9f54a96439eea385b4fd5300804cbfe791e2
     box_title(win, 0, 0, 2, 1, COLS/2-2, 0, COLS/2-1);
 }
