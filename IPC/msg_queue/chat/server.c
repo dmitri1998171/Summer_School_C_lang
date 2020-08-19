@@ -8,10 +8,11 @@
 
 #define MSGSZ 128
 
-typedef struct msgbuf{
+typedef struct msgbuf {
     long mtype;
     char mtext[MSGSZ];
 } message_buf;
+
 
 int main(){
     int msqid;
@@ -25,23 +26,22 @@ int main(){
         perror("msgget");
         exit(1); }
 
-    // заполняем структуру
-    sbuf.mtype = 1;
-    (void) strcpy(sbuf.mtext, "Hello");
-    buf_length = strlen(sbuf.mtext) + 1;
-    
-    // отпр. сообщ.
-    if (msgsnd(msqid, &sbuf, buf_length, IPC_NOWAIT) < 0){
-       printf ("%d, %d, %s, %d\n", msqid, sbuf.mtype, sbuf.mtext, buf_length);
-        perror("msgsnd");
-        exit(1); }
-
-    // получ. ответ
+    while (1)
+    {
+    // получ. сообщ.
     if (msgrcv(msqid, &sbuf, MSGSZ, 1, 0) < 0){
         perror("msgrcv");
         exit(1);}
 
     printf("%s\n", sbuf.mtext);
-      
+    buf_length = strlen(sbuf.mtext) + 1 ;
+    
+    // отпр. ответ
+    if (msgsnd(msqid, &sbuf, buf_length, IPC_NOWAIT) < 0){
+       printf ("%d, %d, %s, %d\n", msqid, sbuf.mtype, sbuf.mtext, buf_length);
+        perror("msgsnd");
+        exit(1); }
+
+    }
     return 0;
 }

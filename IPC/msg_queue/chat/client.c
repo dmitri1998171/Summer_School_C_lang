@@ -8,13 +8,13 @@
 
 #define MSGSZ 128
 
-typedef struct msgbuf {
+typedef struct msgbuf{
     long mtype;
     char mtext[MSGSZ];
 } message_buf;
 
-
-int main(){
+int main(int argc, char **argv[]){
+    char str[15];
     int msqid;
     int msgflg = IPC_CREAT | 0666;
     key_t key=10;
@@ -26,23 +26,29 @@ int main(){
         perror("msgget");
         exit(1); }
 
-    // получ. сообщ.
-    if (msgrcv(msqid, &sbuf, MSGSZ, 1, 0) < 0){
-        perror("msgrcv");
-        exit(1);}
-
-    printf("%s\n", sbuf.mtext);
     
-    // заполняем структуру
-    sbuf.mtype = 1;
-    (void) strcpy(sbuf.mtext, "Hi");
-    buf_length = strlen(sbuf.mtext) + 1 ;
-    
-    // отпр. ответ
-    if (msgsnd(msqid, &sbuf, buf_length, IPC_NOWAIT) < 0){
-       printf ("%d, %d, %s, %d\n", msqid, sbuf.mtype, sbuf.mtext, buf_length);
-        perror("msgsnd");
-        exit(1); }
+    while(1){
+        // заполняем структуру
+        printf("Enter: ");
+        scanf("%s", str);
+        
+        snprintf(sbuf.mtext, sizeof(sbuf.mtext), "%s: %s", argv[1], str);
+        // printf("%s\n", str);
+        sbuf.mtype = 1;
+        buf_length = strlen(sbuf.mtext) + 1;
+        
+        // отпр. сообщ.
+        if (msgsnd(msqid, &sbuf, buf_length, IPC_NOWAIT) < 0){
+        printf ("%d, %d, %s, %d\n", msqid, sbuf.mtype, sbuf.mtext, buf_length);
+            perror("msgsnd");
+            exit(1); }
 
+        // получ. ответ
+        if (msgrcv(msqid, &sbuf, MSGSZ, 1, 0) < 0){
+            perror("msgrcv");
+            exit(1);}
+
+        printf("%s\n", sbuf.mtext);
+    }
     return 0;
 }
