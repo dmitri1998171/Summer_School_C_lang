@@ -14,7 +14,7 @@ typedef struct msgbuf{
     int pid;
 } message_buf;
 
-int main(int argc, char **argv[]){
+int main(int argc, char *argv[]){
     char str[15];
     int msqid;
     int msgflg = IPC_CREAT | 0666;
@@ -24,8 +24,7 @@ int main(int argc, char **argv[]){
 
     // создаем очередь
     if ((msqid = msgget(key, msgflg )) < 0){
-        perror("msgget");
-        exit(1); }
+        perror("msgget"); exit(1); }
 
     
     while(1){
@@ -34,20 +33,19 @@ int main(int argc, char **argv[]){
         scanf("%s", str);
         
         snprintf(sbuf.mtext, sizeof(sbuf.mtext), "%s: %s", argv[1], str);
-        // printf("%s\n", str);
         sbuf.mtype = 1;
         buf_length = strlen(sbuf.mtext) + 1;
-        
+        sbuf.pid = getpid();
+
         // отпр. сообщ.
         if (msgsnd(msqid, &sbuf, buf_length, IPC_NOWAIT) < 0){
-        printf ("%d, %d, %s, %d\n", msqid, sbuf.mtype, sbuf.mtext, buf_length);
-            perror("msgsnd");
-            exit(1); }
+            printf ("%d, %ld, %s, %ld\n", 
+                msqid, sbuf.mtype, sbuf.mtext, buf_length);
+            perror("msgsnd"); exit(1); }
 
         // получ. ответ
         if (msgrcv(msqid, &sbuf, MSGSZ, 1, 0) < 0){
-            perror("msgrcv");
-            exit(1);}
+            perror("msgrcv"); exit(1);}
 
         printf("%s\n", sbuf.mtext);
     }
