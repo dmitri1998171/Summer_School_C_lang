@@ -11,6 +11,7 @@
 typedef struct msgbuf{
     long mtype;
     char mtext[MSGSZ];
+    int pid;
 } message_buf;
 
 int main(int argc, char **argv[]){
