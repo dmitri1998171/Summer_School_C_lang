@@ -39,9 +39,9 @@ int main(){
         
         printf("%s\n", sbuf.mtext);
         buf_length = strlen(sbuf.mtext) + 1 ;
-        
+
         // отпр. ответ
-        for(int i=0; i < 2; i++){
+        for(int i=0; i < I; i++){
             if (msgsnd(msqid, &sbuf, buf_length, IPC_NOWAIT) < 0){
                 printf ("%d, %ld, %s, %ld\n", 
                         msqid, sbuf.mtype, sbuf.mtext, buf_length);
