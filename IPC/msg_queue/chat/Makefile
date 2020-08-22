@@ -4,7 +4,7 @@ SOURCES_1 := server.c
 SOURCES_2 := client.c
 CC := gcc
 CFLAGS :=
-LDFLAGS := 
+LDFLAGS := -lpthread
 
 
 $(BIN_1): $(SOURCES_1)

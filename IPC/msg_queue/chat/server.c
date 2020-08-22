@@ -34,19 +34,19 @@ int main(){
         if (msgrcv(msqid, &sbuf, MSGSZ, 1, 0) < 0){
             perror("msgrcv"); exit(1); }
 
-            // A[I] = sbuf.pid;
-            // I++;
-
+        A[I] = sbuf.pid;
+        I++;
+        
         printf("%s\n", sbuf.mtext);
         buf_length = strlen(sbuf.mtext) + 1 ;
         
         // отпр. ответ
-        // for(int i=0; i < 2; i++){
+        for(int i=0; i < 2; i++){
             if (msgsnd(msqid, &sbuf, buf_length, IPC_NOWAIT) < 0){
                 printf ("%d, %ld, %s, %ld\n", 
                         msqid, sbuf.mtype, sbuf.mtext, buf_length);
                 perror("msgsnd"); exit(1); }
-        // }
+        }
         sleep(2);
     }
     return 0;
