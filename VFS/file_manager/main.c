@@ -10,6 +10,7 @@
 #include <string.h> 
 #include <errno.h>
 #include <wait.h>
+#include <pthread.h>
 
 #define ARR_SIZE 255
 #define BUFF_SIZE 5    // кол-во байт, считываемых за раз 
@@ -26,45 +27,16 @@ int highlight_left = 1, highlight_right = 1;
 WINDOW *win_left;
 WINDOW *win_right;
 
+pthread_t tid1, tid2;
+pthread_mutex_t mutex;
 char *buf[BUFF_SIZE];
 int fdr, fdw, ret;
 
 void print_menu(WINDOW *menu_win, int highlight, char *choices[], int *size);
-// void switchFunc(WINDOW *, char *, char **, int *, char **, int *, int *, int *, int *, int *);
 void switchFunc(WINDOW *win, char *path, char *dir_arr[], int *dir_size, char *choices[], int *c, int *highlight, 
     int *size, int *cycle, int *win_tab);
 void enterFunc(WINDOW *, char **, char *, char **, int *, int *, int *);
-void copyInterfaceFunc(char*);
-
-void renameFunc(char path_r[], char path_w[]){
-    char name[255];
-    char ext[5];
-    
-    strcpy(path_w, path_r);
-    strcpy(name, strtok(path_w, "."));
-    strcpy(ext, strtok(NULL, "."));
-    strcat(name, "(1).");
-    strcat(name, ext);
-    strcpy(path_w, name);
-}
-
-void copyFunc(char path_r[]){
-    char path_w[ARR_SIZE];
-
-    renameFunc(path_r, path_w);
-    
-    fdr = open(path_r, O_RDONLY);
-    fdw = open(path_w, O_CREAT | O_WRONLY, S_IRWXU);
-
-    while((ret = read(fdr, &buf, BUFF_SIZE)) != 0){
-        if(ret == -1) perror("Read error");
-
-        write(fdw, &buf, BUFF_SIZE);
-    }
-
-    close(fdr);
-    close(fdw);
-}
+// void copyInterfaceFunc(char*);
 
 void scaner(char path[], char *choices[], char *dir_arr[], int *size, int *dir_size){
 	int i=0, f=0;
@@ -173,18 +145,8 @@ int main(){
                     &dir_size_left, choices_left, &c, &highlight_left, 
                     &size_left, &cycle, &win_tab);
 
-<<<<<<< HEAD
-<<<<<<< HEAD
             print_menu(win_left, highlight_left, choices_left, 
                     &size_left);
-=======
-=======
->>>>>>> bf6f9f54a96439eea385b4fd5300804cbfe791e2
-            if(c == 10) enterFunc(win_left, choices_left, path_left, 
-            dir_arr_left, &highlight_left, &size_left, &dir_size_left);
-
-            print_menu(win_left, highlight_left, choices_left, &size_left);
->>>>>>> bf6f9f54a96439eea385b4fd5300804cbfe791e2
         }
         if(win_tab == 1){
             c = wgetch(win_right);
@@ -192,18 +154,8 @@ int main(){
                     &dir_size_right, choices_right, &c, &highlight_right, 
                     &size_right, &cycle, &win_tab);
             
-<<<<<<< HEAD
-<<<<<<< HEAD
             print_menu(win_right, highlight_right, choices_right, 
                     &size_right);   
-=======
-=======
->>>>>>> bf6f9f54a96439eea385b4fd5300804cbfe791e2
-            if(c == 10) enterFunc(win_right, choices_right, path_right,
-            dir_arr_right, &highlight_right, &size_right, &dir_size_right);
-            
-            print_menu(win_right, highlight_right, choices_right, &size_right);   
->>>>>>> bf6f9f54a96439eea385b4fd5300804cbfe791e2
         }
 	}	
 	endwin();
@@ -213,33 +165,91 @@ int main(){
 void reloadWinFunc(WINDOW *win, char *choices[], char *path, 
     char *dir_arr[], int *highlight, int *size, int *dir_size){
     
-<<<<<<< HEAD
-<<<<<<< HEAD
     getcwd(path, ARR_SIZE);
     wclear(win);
     scaner(path, choices, dir_arr, size, dir_size);
     
     print_title(win, 1, 0, COLS/2, path, COLOR_PAIR(1));
-=======
-=======
->>>>>>> bf6f9f54a96439eea385b4fd5300804cbfe791e2
-    getcwd(new_path, ARR_SIZE);
-    wclear(win);
-    scaner(new_path, choices, dir_arr, size, dir_size);
-    
-    print_title(win, 1, 0, COLS/2, new_path, COLOR_PAIR(1));
-<<<<<<< HEAD
->>>>>>> bf6f9f54a96439eea385b4fd5300804cbfe791e2
-=======
->>>>>>> bf6f9f54a96439eea385b4fd5300804cbfe791e2
     box_title(win, 0, 0, 2, 1, COLS/2-2, 0, COLS/2-1);
+}
+
+void renameFunc(char path_r[], char path_w[]){
+    char name[255];
+    char ext[5];
+    
+    strcpy(path_w, path_r);
+    strcpy(name, strtok(path_w, "."));
+    strcpy(ext, strtok(NULL, "."));
+    strcat(name, "(1).");
+    strcat(name, ext);
+    strcpy(path_w, name);
+}
+
+void* copyFunc(void *param){
+    char *path = (char*) param;
+    char path_r[ARR_SIZE];
+    char path_w[ARR_SIZE];
+
+    strcpy(path_r, path);
+    renameFunc(path_r, path_w);
+
+    mvwprintw(stdscr, 2, 2, "path: %s path_w: %s path_r: %s\n", 
+                path, path_w, path_r);
+    
+    fdr = open(path_r, O_RDONLY);
+    fdw = open(path_w, O_CREAT | O_WRONLY, S_IRWXU);
+
+    while((ret = read(fdr, &buf, BUFF_SIZE)) != 0){
+        if(ret == -1) perror("Read error");
+
+        write(fdw, &buf, BUFF_SIZE);
+    }
+
+    close(fdr);
+    close(fdw);
+    return NULL;
+}
+
+void *copyInterfaceFunc(void *param){
+    pthread_mutex_lock(&mutex);
+    char *name = (char*) param;
+    pthread_mutex_unlock(&mutex);
+    int h=6, w=50; 
+    WINDOW *mycopywin;
+    WINDOW *mysubwin;
+
+    curs_set(0);
+    start_color();
+    init_pair(1, COLOR_RED, COLOR_BLACK);
+    
+    mycopywin = newwin(h, w, (LINES/2)-(h/2), (COLS/2)-(w/2));
+    box(mycopywin, 0, 0);
+
+    wattron(mycopywin, COLOR_PAIR(1));
+    mvwprintw(mycopywin, h-5, 2, "Copy: ");
+    wattroff(mycopywin, COLOR_PAIR(1));
+    mvwprintw(mycopywin, h-5, 8, name);
+
+    mysubwin = derwin(mycopywin, 3, w-2, 2, 1);
+    box(mysubwin, 0,0);
+
+    wattroff(mycopywin, COLOR_PAIR(1));
+    for(int n = 0; n < w; n++){
+        mvwaddch(mycopywin, h-3, n+2, '#');
+        mvwprintw(mycopywin, h-5, strlen(name)+10, "%d%%", (n*2)+6);
+        wrefresh(mycopywin);
+        usleep(100000);
+    }
+    wgetch(mycopywin);
+    delwin(mysubwin);
+    delwin(mycopywin);
+    return NULL;
 }
 
 void switchFunc(WINDOW *win, char *path, char *dir_arr[], 
                 int *dir_size, char *choices[], int *c, 
                 int *highlight, int *size, int *cycle, 
                 int *win_tab){
-
     switch(*c){
         case KEY_DOWN:
             if(highlight == size)
@@ -258,7 +268,17 @@ void switchFunc(WINDOW *win, char *path, char *dir_arr[],
             *cycle = 0;
             break;
         case KEY_F(5):
-            copyFunc(choices[*highlight-1]);
+            pthread_mutex_init(&mutex, NULL);
+            
+            pthread_create(&tid1, NULL, copyFunc, choices[*highlight-1]);
+            pthread_create(&tid2, NULL, copyInterfaceFunc, choices[*highlight-1]);
+
+            pthread_join(tid1, NULL);
+            pthread_join(tid2, NULL);
+
+            pthread_mutex_destroy(&mutex);
+
+            // copyFunc(choices[*highlight-1]);
             reloadWinFunc(win, choices, path, dir_arr, 
                 highlight, size, dir_size);
             break;
@@ -302,38 +322,6 @@ void enterFunc(WINDOW *win, char *choices[], char *path,
     refresh();
     wrefresh(win_left);
     wrefresh(win_right);
-}
-
-void copyInterfaceFunc(char *name){
-    int h=6, w=50; 
-    WINDOW *mycopywin;
-    WINDOW *mysubwin;
-
-    curs_set(0);
-    start_color();
-    init_pair(1, COLOR_RED, COLOR_BLACK);
-    
-    mycopywin = newwin(h, w, (LINES/2)-(h/2), (COLS/2)-(w/2));
-    box(mycopywin, 0, 0);
-
-    wattron(mycopywin, COLOR_PAIR(1));
-    mvwprintw(mycopywin, h-5, 2, "Copy: ");
-    wattroff(mycopywin, COLOR_PAIR(1));
-    mvwprintw(mycopywin, h-5, 8, name);
-
-    mysubwin = derwin(mycopywin, 3, w-2, 2, 1);
-    box(mysubwin, 0,0);
-
-    wattroff(mycopywin, COLOR_PAIR(1));
-    for(int n = 2; n < w-2; n++){
-        mvwaddch(mycopywin, h-3, n, '#');
-        mvwprintw(mycopywin, h-5, strlen(name)+10, "%d%%", (n*2)+6);
-        wrefresh(mycopywin);
-        usleep(100000);
-    }
-    wgetch(mycopywin);
-    delwin(mysubwin);
-    delwin(mycopywin);
 }
 
 void print_menu(WINDOW *menu_win, int highlight, char *choices[], int *size){
