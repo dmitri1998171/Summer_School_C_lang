@@ -10,14 +10,15 @@
 
 #define MSGSZ 128
 
-typedef struct msgbuf{
+typedef struct msgbuf {
     long mtype;
     char mtext[MSGSZ];
-    int pid;
+    unsigned int pid;
 } message_buf;
 
 char str[15];
-int msqid;
+int msqid_s, msqid;
+int pid;
 pthread_t tid, tid2;
 size_t buf_length;
 message_buf sbuf;
@@ -61,6 +62,8 @@ int main(int argc, char *argv[]){
     int msgflg = IPC_CREAT | 0666;
     key_t key=10;
 
+    pid  = getpid();
+
     initscr();
     start_color(); 
     init_color(COLOR_BLACK, 140, 140, 140);
@@ -69,8 +72,12 @@ int main(int argc, char *argv[]){
     winInit(&inputWin, 3, COLS, LINES-3, 0, "Enter: ");
     winInit(&outputWin, LINES-6, COLS, 3, 0, "Out: ");
 
-    // создаем очередь
-    if ((msqid = msgget(key, msgflg )) < 0){
+    // создаем очередь(отпр.)
+    if ((msqid = msgget(key, msgflg)) < 0){
+        perror("msgget"); exit(1); }
+
+    // получ.
+    if ((msqid_s = msgget(pid, msgflg)) < 0){
         perror("msgget"); exit(1); }
       
     pthread_create(&tid, NULL, writeFunc, argv[1]);
@@ -96,8 +103,10 @@ void *writeFunc(void *param){
         snprintf(sbuf.mtext, sizeof(sbuf.mtext), 
                 "%s: %s", name, str);
         sbuf.mtype = 1;
+        sbuf.pid = pid;
         size_t buf_length = strlen(sbuf.mtext) + 1;
-        sbuf.pid = getpid();
+
+        mvwprintw(inputWin, 0, 10, "pid: %d\n", sbuf.pid);
 
         // отпр. сообщ.
         if (msgsnd(msqid, &sbuf, buf_length, IPC_NOWAIT) < 0){
@@ -111,7 +120,7 @@ void *writeFunc(void *param){
 void *readFunc(void *param){
     while(1){
         // получ. ответ
-        if (msgrcv(msqid, &sbuf, MSGSZ, 1, 0) < 0){
+        if (msgrcv(msqid_s, &sbuf, MSGSZ, 1, 0) < 0){
             perror("msgrcv"); exit(1);}
         
         mvwprintw(outputWin, 1, 1, sbuf.mtext); // вывод строки на экран

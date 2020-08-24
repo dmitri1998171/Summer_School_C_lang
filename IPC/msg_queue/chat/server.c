@@ -7,44 +7,48 @@
 #include <unistd.h>
 
 #define MSGSZ 128
+#define N 15
 
 typedef struct msgbuf {
     long mtype;
     char mtext[MSGSZ];
-    int pid;
+    unsigned int pid;
 } message_buf;
 
 
 int main(){
-    int msqid;
+    int I=0, key_s = 10;
+    int msqid[N], msgqid_s;
     int msgflg = IPC_CREAT | 0666;
-    key_t key=10;
+    int key[N];
     message_buf sbuf;
     size_t buf_length;
 
-    int A[15];
-    int I=0;
 
     // создаем очередь
-    if ((msqid = msgget(key, msgflg )) < 0){
+    if ((msgqid_s = msgget(key_s, msgflg)) < 0){
         perror("msgget"); exit(1); }
 
     while (1)
     {   // получ. сообщ.
-        if (msgrcv(msqid, &sbuf, MSGSZ, 1, 0) < 0){
+        if (msgrcv(msgqid_s, &sbuf, MSGSZ, 1, 0) < 0){
             perror("msgrcv"); exit(1); }
 
-        A[I] = sbuf.pid;
-        I++;
+        key[I] = sbuf.pid;
+        printf("key[%d]: %d\tsbuf.pid: %d\n", I, key[I], sbuf.pid);
+        if ((msqid[I] = msgget(key[I], msgflg)) < 0){
+        perror("msgget"); exit(1); }
         
         printf("%s\n", sbuf.mtext);
-        buf_length = strlen(sbuf.mtext) + 1 ;
-
+        buf_length = strlen(sbuf.mtext) + 1;
+        // printf("key[%d]: %d\tmsqid[%d]: %d\n", I, sbuf.pid, I, msqid[I]);
+        
+        I++;
         // отпр. ответ
         for(int i=0; i < I; i++){
-            if (msgsnd(msqid, &sbuf, buf_length, IPC_NOWAIT) < 0){
+            if (msgsnd(msqid[i], &sbuf, buf_length, IPC_NOWAIT) < 0){
                 printf ("%d, %ld, %s, %ld\n", 
-                        msqid, sbuf.mtype, sbuf.mtext, buf_length);
+                        msqid[i], sbuf.mtype, sbuf.mtext, buf_length);
                 perror("msgsnd"); exit(1); }
         }
         sleep(2);
