@@ -107,6 +107,7 @@ void displayFunc(){
     start_color();
 	noecho();
 	cbreak();
+    init_color(COLOR_BLACK, 140, 140, 140);
     init_pair(1, COLOR_RED, COLOR_BLACK);
 
     chdir(".");
@@ -133,7 +134,8 @@ void displayFunc(){
 
 int main(){	
 	int c, cycle = 1, win_tab = 0;
-    
+    pthread_mutex_init(&mutex, NULL);
+
     displayFunc();
     
 	while(cycle)
@@ -158,6 +160,7 @@ int main(){
                     &size_right);   
         }
 	}	
+    pthread_mutex_destroy(&mutex);
 	endwin();
 	return 0;
 }
@@ -190,11 +193,11 @@ void* copyFunc(void *param){
     char path_r[ARR_SIZE];
     char path_w[ARR_SIZE];
 
+    pthread_mutex_lock(&mutex);
     strcpy(path_r, path);
-    renameFunc(path_r, path_w);
+    pthread_mutex_unlock(&mutex);
 
-    mvwprintw(stdscr, 2, 2, "path: %s path_w: %s path_r: %s\n", 
-                path, path_w, path_r);
+    renameFunc(path_r, path_w);
     
     fdr = open(path_r, O_RDONLY);
     fdw = open(path_w, O_CREAT | O_WRONLY, S_IRWXU);
@@ -267,20 +270,15 @@ void switchFunc(WINDOW *win, char *path, char *dir_arr[],
         case KEY_F(1):
             *cycle = 0;
             break;
-        case KEY_F(5):
-            pthread_mutex_init(&mutex, NULL);
-            
+        case KEY_F(5):            
             pthread_create(&tid1, NULL, copyFunc, choices[*highlight-1]);
             pthread_create(&tid2, NULL, copyInterfaceFunc, choices[*highlight-1]);
 
             pthread_join(tid1, NULL);
             pthread_join(tid2, NULL);
 
-            pthread_mutex_destroy(&mutex);
-
-            // copyFunc(choices[*highlight-1]);
             reloadWinFunc(win, choices, path, dir_arr, 
-                highlight, size, dir_size);
+                        highlight, size, dir_size);
             break;
 
         case '\t':
