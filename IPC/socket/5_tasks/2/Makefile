@@ -1,8 +1,7 @@
 all: client server
 client:
-	gcc TCPEchoClient.c DieWithError.c -o client
+	clear && gcc TCPEchoClient2.c DieWithError.c -o client2
 server:
-	gcc TCPEchoServer-ForkN.c DieWithError.c CreateTCPServerSocket.c AcceptTCPConnection.c HandleTCPClient.c -lpthread -o server
-	
+	clear && gcc TCPEchoServer.c DieWithError.c -o server2
 clean:
-	rm -rf client server
+	rm -f client2 server2
