@@ -7,7 +7,6 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <ncurses.h>
-// #include "interface.h"
 
 #define MSGSZ 256
 
