@@ -1,7 +1,7 @@
 BIN_1 := server
 BIN_2 := client
 SOURCES_1 := server.c
-SOURCES_2 := client.c
+SOURCES_2 := client.c interface.c
 CC := gcc
 CFLAGS :=
 LDFLAGS := -lpthread -lncurses
