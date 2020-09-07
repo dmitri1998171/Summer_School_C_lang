@@ -47,6 +47,10 @@ void *writeFunc(void *param){
             printf ("%d, %ld, %s, %ld\n", 
                 msqid, sbuf.mtype, sbuf.mtext, buf_length);
             perror("msgsnd"); exit(1); }
+
+        // mvwprintw(outputWin, strCount, 2, "%s\n", sbuf.mtext);
+        // wrefresh(outputWin);
+        // strCount++;
     }
     return NULL;
 }
