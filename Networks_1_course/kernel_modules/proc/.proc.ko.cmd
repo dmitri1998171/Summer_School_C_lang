@@ -1,0 +1,1 @@
+cmd_/home/dmitry/Desktop/kernel_modules/proc/proc.ko := ld -r -m elf_x86_64 -z max-page-size=0x200000 -T ./scripts/module-common.lds --build-id  -o /home/dmitry/Desktop/kernel_modules/proc/proc.ko /home/dmitry/Desktop/kernel_modules/proc/proc.o /home/dmitry/Desktop/kernel_modules/proc/proc.mod.o ;  true

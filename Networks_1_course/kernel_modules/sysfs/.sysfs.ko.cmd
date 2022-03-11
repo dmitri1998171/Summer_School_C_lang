@@ -1,0 +1,1 @@
+cmd_/home/dmitry/Desktop/kernel_modules/sysfs/sysfs.ko := ld -r -m elf_x86_64 -z max-page-size=0x200000 -T ./scripts/module-common.lds --build-id  -o /home/dmitry/Desktop/kernel_modules/sysfs/sysfs.ko /home/dmitry/Desktop/kernel_modules/sysfs/sysfs.o /home/dmitry/Desktop/kernel_modules/sysfs/sysfs.mod.o ;  true
